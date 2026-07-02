@@ -37,7 +37,7 @@ public interface MapMvtMapper {
         "    ) AS geom",
         "  FROM map_feature f",
         "  WHERE f.layer_id = #{layerId}",
-        "    AND f.geometry && ST_Transform(ST_TileEnvelope(#{z}, #{x}, #{y}), 4326)",
+        "    AND f.geometry &amp;&amp; ST_Transform(ST_TileEnvelope(#{z}, #{x}, #{y}), 4326)",
         "  LIMIT #{maxFeatures}",
         ") tile",
         "</script>"
