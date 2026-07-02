@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.zynboot</groupId>
+        <artifactId>zyn</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>zyn-app</artifactId>
+    <packaging>pom</packaging>
+    <name>zyn-app</name>
+    <description>Application modules aggregation POM</description>
+
+    <modules>
+        <module>zyn-app-system</module>
+        <module>zyn-app-demo</module>
+    </modules>
+</project>

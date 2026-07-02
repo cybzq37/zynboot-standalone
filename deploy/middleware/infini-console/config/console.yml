@@ -1,0 +1,8 @@
+app:
+  name: infini-console
+  host: 0.0.0.0
+  port: 9000
+
+credential:
+  username: admin
+  password: Zyn@secure#99

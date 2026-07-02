@@ -1,0 +1,20 @@
+server:
+  port: 28080
+  servlet:
+    context-path: /demo
+
+spring:
+  application:
+    name: zyn-demo
+  profiles:
+    active: @spring.profiles.active@
+  config:
+    import:
+      - classpath:zyn-conf-common.yml
+      - classpath:zyn-conf-@spring.profiles.active@.yml
+
+zyn:
+  # 展示型应用：不启用全局登录拦截器（各 demo/健康检查端点保持开放）；
+  # 代理到 system 时由 exchange 的 forward-auth 转发 token，鉴权在 system 侧执行。
+  satoken:
+    interceptor-enabled: false

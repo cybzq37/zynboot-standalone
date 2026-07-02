@@ -1,0 +1,40 @@
+server:
+  port: 28082
+
+spring:
+  application:
+    name: zyn-map
+  profiles:
+    active: @spring.profiles.active@
+  config:
+    import:
+      - classpath:zyn-conf-common.yml
+      - classpath:zyn-conf-@spring.profiles.active@.yml
+      - optional:nacos:zyn-conf-common.yml
+      - optional:nacos:zyn-conf-@spring.profiles.active@.yml
+  sql:
+    init:
+      mode: never
+      schema-locations: classpath:sql/map_schema.sql
+
+zyn:
+  map:
+    raster:
+      root-path: ./map-data/raster
+      upload-max-size: 500MB
+      allowed-formats: tif,tiff,img,adf
+      auto-tile: true
+      auto-overview: true
+      tile-format: png
+      tile-size: 256
+      tile-min-zoom: 8
+      tile-max-zoom: 18
+      gdal-path: ${GDAL_PATH:D:/OSGeo4W}
+    tile:
+      enabled: true
+      cache-enabled: true
+      cache-ttl: 3600
+      allowed-projections:
+        - EPSG:3857
+        - EPSG:4326
+        - EPSG:4490

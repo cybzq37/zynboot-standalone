@@ -1,0 +1,70 @@
+# ──────────────────────────────────────────────────────────────
+# 开发环境（中间件连接 + 服务地址 + 开发工具）
+# ──────────────────────────────────────────────────────────────
+
+# SpringDoc（开发环境开启）
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+
+# Actuator（开发环境开启全部端点）
+management:
+  endpoints:
+    enabled-by-default: true
+  endpoint:
+    health:
+      show-details: always
+
+# SQL 日志（开发环境开启）
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+# Logging（开发环境打印框架日志）
+logging:
+  level:
+    com.zynboot: debug
+
+# Server（开发环境显示错误详情）
+server:
+  error:
+    include-stacktrace: always
+    include-message: always
+
+spring:
+  datasource:
+    dynamic:
+      datasource:
+        master:
+          url: jdbc:postgresql://${DB_HOST:localhost}:5432/zyn_base
+          username: postgres
+          password: ${POSTGRES_PASSWORD:Zyn@secure#99}
+          driver-class-name: org.postgresql.Driver
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: 6379
+      password: ${REDIS_PASSWORD:Zyn@secure#99}
+      database: 0
+    elasticsearch:
+      uris: http://${ES_HOST:localhost}:9200
+      username: elastic
+      password: ${ELASTIC_PASSWORD:Zyn@secure#99}
+  kafka:
+    bootstrap-servers: ${KAFKA_HOST:localhost}:9092
+
+zyn:
+  exchange:
+    services:
+      sys: ${SYS_BASE_URL:http://localhost:28081}
+      netty: http://localhost:28082
+  kit:
+    okhttp:
+      enable-log-interceptor: true
+  storage:
+    s3:
+      endpoint: http://localhost:8333

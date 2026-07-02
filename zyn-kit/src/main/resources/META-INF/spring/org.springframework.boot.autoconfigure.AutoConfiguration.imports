@@ -1,0 +1,4 @@
+com.zynboot.kit.jackson.config.JacksonConfig
+com.zynboot.kit.jackson.config.ValidatorConfig
+com.zynboot.kit.okhttp.HttpClientAutoConfiguration
+com.zynboot.kit.threadpool.ThreadPoolConfig

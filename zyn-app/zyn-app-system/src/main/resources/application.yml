@@ -1,0 +1,30 @@
+server:
+  port: 28081
+  servlet:
+    context-path: /sys
+
+spring:
+  application:
+    name: zyn-sys
+  profiles:
+    active: @spring.profiles.active@
+  config:
+    import:
+      - classpath:zyn-conf-common.yml
+      - classpath:zyn-conf-@spring.profiles.active@.yml
+  sql:
+    init:
+      mode: never
+      schema-locations: classpath:sql/schema.sql
+      data-locations: classpath:sql/data.sql
+
+mybatis-plus:
+  global-config:
+    db-config:
+      logic-delete-field: deleted
+      logic-delete-value: true
+      logic-not-delete-value: false
+
+zyn:
+  satoken:
+    root-user-id: 3c3be4ff7b1b41989494ce19eb90e3fe

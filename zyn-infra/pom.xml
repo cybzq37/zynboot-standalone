@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.zynboot</groupId>
+        <artifactId>zyn</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>zyn-infra</artifactId>
+    <packaging>pom</packaging>
+    <name>zyn-infra</name>
+    <description>Infrastructure modules aggregation POM</description>
+
+    <modules>
+        <module>zyn-infra-exchange</module>
+        <module>zyn-infra-redis</module>
+        <module>zyn-infra-kafka</module>
+        <module>zyn-infra-es</module>
+        <module>zyn-infra-mybatis</module>
+        <module>zyn-infra-storage</module>
+        <module>zyn-infra-geo</module>
+        <module>zyn-infra-web</module>
+        <module>zyn-infra-satoken</module>
+    </modules>
+</project>

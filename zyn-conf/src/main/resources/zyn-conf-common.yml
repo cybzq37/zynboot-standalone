@@ -1,0 +1,118 @@
+# ──────────────────────────────────────────────────────────────
+# 通用配置（所有环境共享）
+# ──────────────────────────────────────────────────────────────
+
+spring:
+  jackson:
+    time-zone: Asia/Shanghai
+  servlet:
+    multipart:
+      max-file-size: 500MB
+      max-request-size: 500MB
+      file-size-threshold: 2MB
+
+# Server 安全加固
+server:
+  tomcat:
+    # 禁用 TRACE 方法
+    allow-trace: false
+    # 隐藏 Server Header
+    server-header: ""
+    # 隐藏 X-Powered-By
+    x-powered-by: false
+    # 连接超时（毫秒）
+    connection-timeout: 30000
+    # 长连接超时（毫秒，0=不限制）
+    keep-alive-timeout: 0
+    # 最大线程数
+    threads:
+      max: 200
+      min-spare: 20
+    # 最大连接数
+    max-connections: 8192
+    # 最大 POST 表单大小
+    max-http-form-post-size: 10MB
+  # 隐藏错误详情
+  error:
+    include-stacktrace: never
+    include-message: never
+
+# MyBatis-Plus
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+
+# Sa-Token
+sa-token:
+  token-name: Authorization
+  timeout: 2592000
+  active-timeout: -1
+  is-concurrent: true
+  is-share: false
+  token-style: uuid
+  is-log: true
+
+# SpringDoc（默认关闭，由 profile 控制）
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+# Actuator（默认关闭所有端点）
+management:
+  endpoints:
+    enabled-by-default: false
+
+# Zyn
+zyn:
+  exchange:
+    connect-timeout-ms: 3000
+    read-timeout-ms: 10000
+    follow-redirects: false
+    forward-auth: true
+  satoken:
+    enabled: true
+    login-type: login
+    token-prefix: Bearer
+    root-user-id: 1
+  mybatis:
+    enabled: true
+  storage:
+    enabled: true
+    type: LOCAL
+    date-path-pattern: yyyy/MM/dd
+    filename-strategy: UUID
+    conflict-strategy: APPEND_SUFFIX
+    local:
+      root-path: ./uploads
+      access-path-prefix: /uploads
+    s3:
+      bucket: zyn
+      region: cn-north-1
+      path-style-access: true
+      access-key: ${S3_ACCESS_KEY:zynex}
+      secret-key: ${S3_SECRET_KEY:Zyn@secure#99}
+  web:
+    cors:
+      enabled: true
+      allowed-origins: ["*"]
+      allowed-methods: ["GET","POST","PUT","DELETE","PATCH","OPTIONS"]
+      allowed-headers: ["*"]
+      allow-credentials: false
+      max-age: 3600
+    exception:
+      enabled: true
+      include-stack-trace: false
+    response:
+      enabled: true
+      success-code: "0"
+      success-message: OK
+  kit:
+    okhttp:
+      connect-timeout-seconds: 5
+      read-timeout-seconds: 10
+      write-timeout-seconds: 10
+      call-timeout-seconds: 30
+      enable-log-interceptor: false
+

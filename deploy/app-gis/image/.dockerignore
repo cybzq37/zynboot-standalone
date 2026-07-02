@@ -1,0 +1,4 @@
+# 仅保留 Dockerfile、start.sh、app.jar
+*.md
+*.sh
+!start.sh
