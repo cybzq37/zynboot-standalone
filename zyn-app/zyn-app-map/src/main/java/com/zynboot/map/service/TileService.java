@@ -89,26 +89,27 @@ public class TileService {
             return;
         }
 
-        MapSourceTile tile = tileMapper.selectOne(
-                new LambdaQueryWrapper<MapSourceTile>().eq(MapSourceTile::getSourceId, sourceId));
-        if (tile == null) {
-            tile = new MapSourceTile();
-            tile.setSourceId(sourceId);
-            tile.setFormat("png");
-            tile.setTileSize(256);
-            tileMapper.insert(tile);
-        }
-
-        task.setStatus("RUNNING");
-        task.setStartedAt(LocalDateTime.now());
-        task.setProgress(0);
-        taskMapper.updateById(task);
-
-        tile.setStatus("TILING");
-        tile.setProgress(0);
-        tileMapper.updateById(tile);
-
+        MapSourceTile tile = null;
         try {
+            tile = tileMapper.selectOne(
+                    new LambdaQueryWrapper<MapSourceTile>().eq(MapSourceTile::getSourceId, sourceId));
+            if (tile == null) {
+                tile = new MapSourceTile();
+                tile.setSourceId(sourceId);
+                tile.setFormat("png");
+                tile.setTileSize(256);
+                tileMapper.insert(tile);
+            }
+
+            task.setStatus("RUNNING");
+            task.setStartedAt(LocalDateTime.now());
+            task.setProgress(0);
+            taskMapper.updateById(task);
+
+            tile.setStatus("TILING");
+            tile.setProgress(0);
+            tileMapper.updateById(tile);
+
             Path rasterPath = Paths.get(storageKey);
             Path tilesDir = Paths.get(rasterRootPath, layerId, sourceId, "tiles");
             Files.createDirectories(tilesDir);
@@ -188,15 +189,19 @@ public class TileService {
                 log.error("Tiling failed: sourceId={}, exitCode={}", sourceId, exitCode);
             }
         } catch (Exception e) {
-            tile.setStatus("FAILED");
+            log.error("Tiling error: sourceId={}", sourceId, e);
+            if (tile != null) {
+                tile.setStatus("FAILED");
+            }
             task.setStatus("FAILED");
             task.setErrorCount(1);
             task.setErrorMessage(e.getMessage());
             task.setFinishedAt(LocalDateTime.now());
-            log.error("Tiling error: sourceId={}", sourceId, e);
         }
 
-        tileMapper.updateById(tile);
+        if (tile != null) {
+            tileMapper.updateById(tile);
+        }
         taskMapper.updateById(task);
     }
 

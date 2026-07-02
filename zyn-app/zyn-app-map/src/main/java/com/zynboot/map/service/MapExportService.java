@@ -114,14 +114,39 @@ public class MapExportService {
             try {
                 Map<String, Object> geom = MAPPER.readValue(geoJson, Map.class);
                 Object coords = geom.get("coordinates");
-                if (coords instanceof List<?> list && list.size() >= 2) {
-                    return new String[]{String.valueOf(list.get(0)), String.valueOf(list.get(1))};
+                if (coords instanceof List<?> list) {
+                    double[] firstPair = findFirstCoordinate(list);
+                    if (firstPair != null) {
+                        return new String[]{String.valueOf(firstPair[0]), String.valueOf(firstPair[1])};
+                    }
                 }
             } catch (Exception e) {
                 log.debug("Extract lng/lat failed", e);
             }
         }
         return new String[]{"0", "0"};
+    }
+
+    /**
+     * 递归查找 GeoJSON coordinates 数组中的第一对 [lng, lat]。
+     * 支持 Point（扁平数组）、LineString / MultiPoint（嵌套一层）、
+     * Polygon / MultiLineString（嵌套两层）等几何类型。
+     */
+    private double[] findFirstCoordinate(List<?> coords) {
+        for (Object item : coords) {
+            if (item instanceof Number) {
+                // 这层是坐标值：取前两个作为 [lng, lat]
+                if (coords.size() >= 2 && coords.get(0) instanceof Number && coords.get(1) instanceof Number) {
+                    return new double[]{((Number) coords.get(0)).doubleValue(),
+                            ((Number) coords.get(1)).doubleValue()};
+                }
+                return null;
+            } else if (item instanceof List<?> nested) {
+                double[] result = findFirstCoordinate(nested);
+                if (result != null) return result;
+            }
+        }
+        return null;
     }
 
     @Getter

@@ -37,7 +37,7 @@ public class PublicAccessController {
             @PathVariable int y,
             jakarta.servlet.http.HttpServletResponse response) throws Exception {
 
-        instanceService.getPublicMap(publishId);
+        instanceService.validateSourceBelongsToPublish(publishId, sourceId);
         MapTileReadService.TilePayload tile = tileReadService.readRasterTile(sourceId, z, x, y, "png");
         if (tile == null) {
             response.setStatus(204);

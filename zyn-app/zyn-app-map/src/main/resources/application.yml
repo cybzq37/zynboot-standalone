@@ -10,8 +10,6 @@ spring:
     import:
       - classpath:zyn-conf-common.yml
       - classpath:zyn-conf-@spring.profiles.active@.yml
-      - optional:nacos:zyn-conf-common.yml
-      - optional:nacos:zyn-conf-@spring.profiles.active@.yml
   sql:
     init:
       mode: never

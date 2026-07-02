@@ -94,13 +94,20 @@ public class CsvImporter implements VectorImporter {
     }
 
     private String[] parseCsvLine(String line) {
-        // Simple CSV parser (handles quoted fields)
+        // RFC 4180 CSV parser: handles quoted fields and doubled-quote escape sequence
         List<String> fields = new ArrayList<>();
         StringBuilder current = new StringBuilder();
         boolean inQuotes = false;
-        for (char c : line.toCharArray()) {
+        for (int i = 0; i < line.length(); i++) {
+            char c = line.charAt(i);
             if (c == '"') {
-                inQuotes = !inQuotes;
+                if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
+                    // RFC 4180 doubled-quote escape: append one literal quote
+                    current.append('"');
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
             } else if (c == ',' && !inQuotes) {
                 fields.add(current.toString());
                 current = new StringBuilder();

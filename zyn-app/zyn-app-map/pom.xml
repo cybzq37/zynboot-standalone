@@ -51,10 +51,6 @@
             <groupId>com.zynboot</groupId>
             <artifactId>zyn-infra-es</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.zynboot</groupId>
-            <artifactId>zyn-infra-nacos</artifactId>
-        </dependency>
 
         <!-- Spring Boot -->
         <dependency>

@@ -5,6 +5,7 @@ import com.zynboot.kit.exception.BizException;
 import com.zynboot.kit.util.IdUtils;
 import com.zynboot.map.command.instance.InstanceLayerSaveCmd;
 import com.zynboot.map.command.instance.InstanceSaveCmd;
+import com.zynboot.map.domain.repository.SourceRepository;
 import com.zynboot.map.infrastructure.entity.MapInstance;
 import com.zynboot.map.infrastructure.entity.MapInstanceLayer;
 import com.zynboot.map.infrastructure.entity.MapPublish;
@@ -28,6 +29,7 @@ public class MapInstanceService {
     private final MapInstanceMapper instanceMapper;
     private final MapInstanceLayerMapper instanceLayerMapper;
     private final MapPublishMapper publishMapper;
+    private final SourceRepository sourceRepository;
 
     public List<InstanceRes> listInstances() {
         return instanceMapper.selectList(null).stream().map(this::toInstanceRes).toList();
@@ -98,6 +100,16 @@ public class MapInstanceService {
     @Transactional
     public PublishRes publish(String instanceId) {
         requireInstance(instanceId);
+        // 先将同一 instance 已有的活跃发布置为非活跃，避免同时存在多个有效公开链接
+        List<MapPublish> activePublishes = publishMapper.selectList(
+                new LambdaQueryWrapper<MapPublish>()
+                        .eq(MapPublish::getInstanceId, instanceId)
+                        .eq(MapPublish::getIsActive, true));
+        for (MapPublish ap : activePublishes) {
+            ap.setIsActive(false);
+            publishMapper.updateById(ap);
+        }
+
         MapPublish publish = new MapPublish();
         publish.setId(IdUtils.uuid());
         publish.setInstanceId(instanceId);
@@ -146,6 +158,23 @@ public class MapInstanceService {
             throw BizException.notFound("发布记录");
         }
         return publish;
+    }
+
+    /**
+     * 校验 sourceId 是否属于指定发布的 Instance，防止越权读取非公开图层瓦片。
+     */
+    public void validateSourceBelongsToPublish(String publishId, String sourceId) {
+        MapPublish publish = requireActivePublish(publishId);
+        var source = sourceRepository.findById(sourceId)
+                .orElseThrow(() -> BizException.notFound("数据源"));
+        // 检查该数据源所属的图层是否在此 Instance 的图层列表中
+        boolean belongs = instanceLayerMapper.selectCount(
+                new LambdaQueryWrapper<MapInstanceLayer>()
+                        .eq(MapInstanceLayer::getInstanceId, publish.getInstanceId())
+                        .eq(MapInstanceLayer::getLayerId, source.getLayerId())) > 0;
+        if (!belongs) {
+            throw BizException.notFound("数据源");
+        }
     }
 
     private void applyInstance(MapInstance instance, InstanceSaveCmd cmd) {

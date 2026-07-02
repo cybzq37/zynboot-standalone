@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -37,6 +38,9 @@ public class ImportService {
     private final MapLayerFieldMapper fieldMapper;
     private final MapFeatureMapper featureMapper;
     private final List<VectorImporter> importers;
+
+    @Value("${zyn.map.raster.root-path:./map-data/raster}")
+    private String rasterRootPath;
 
     // ── 矢量导入（PostGIS Geometry 写入）────────────────────
 
@@ -144,8 +148,10 @@ public class ImportService {
         LayerAggregate layer = layerRepository.findById(layerId)
                 .orElseThrow(() -> new IllegalArgumentException("图层不存在: " + layerId));
 
-        Path path = Paths.get(filePath);
+        Path path = Paths.get(filePath).normalize();
+        Path rootPath = Paths.get(rasterRootPath).normalize();
         if (!Files.exists(path)) throw new IllegalArgumentException("文件不存在: " + filePath);
+        if (!path.startsWith(rootPath)) throw new IllegalArgumentException("文件路径不在允许的栅格根目录内: " + rasterRootPath);
 
         SourceAggregate source = SourceAggregate.create(layerId, sourceName, "FILE", "GEOTIFF");
         source.getEntity().setSourceSrid(parseSrid(sourceSrid));

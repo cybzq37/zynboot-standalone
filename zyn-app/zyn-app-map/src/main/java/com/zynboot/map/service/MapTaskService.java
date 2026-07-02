@@ -11,6 +11,8 @@ import com.zynboot.map.response.task.TaskRes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -82,7 +84,13 @@ public class MapTaskService {
         task.setCreatedAt(LocalDateTime.now());
         taskMapper.insert(task);
 
-        tileService.tileAsync(task.getId(), sourceId, storageKey, source.getLayerId());
+        // 在事务提交后再触发异步切片，避免 worker 线程读到未提交的 task 行
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                tileService.tileAsync(task.getId(), sourceId, storageKey, source.getLayerId());
+            }
+        });
         return toRes(task);
     }
 

@@ -147,6 +147,7 @@ When creating `zyn-infra-<name>`:
 |-----|------|-------------|---------|
 | zyn-app-system | 28081 | /sys | System management (users, roles, permissions, orgs) |
 | zyn-app-demo | 28080 | /demo | Showcase of all infra modules |
+| zyn-app-map | 28082 | (none) | GIS map service (layers, data sources, raster/tile publishing, features, styles, CRS) |
 
 ## Naming Conventions
 

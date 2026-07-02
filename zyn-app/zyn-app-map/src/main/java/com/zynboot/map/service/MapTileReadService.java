@@ -53,8 +53,13 @@ public class MapTileReadService {
     }
 
     public byte[] readMbtilesTile(String layerId, int z, int x, int y) {
-        Path mbtilesPath = Paths.get(rasterRootPath, layerId, layerId + ".mbtiles");
-        if (!Files.exists(mbtilesPath)) {
+        // Sanitize layerId: reject path traversal patterns
+        if (layerId.contains("..") || layerId.contains("/") || layerId.contains("\\")) {
+            log.warn("Rejected suspicious layerId: {}", layerId);
+            return null;
+        }
+        Path mbtilesPath = Paths.get(rasterRootPath, layerId, layerId + ".mbtiles").normalize();
+        if (!mbtilesPath.startsWith(Paths.get(rasterRootPath).normalize()) || !Files.exists(mbtilesPath)) {
             return null;
         }
 
@@ -86,8 +91,9 @@ public class MapTileReadService {
 
             String tilePath = tile.getPath() != null ? tile.getPath() : source.getId() + "/tiles";
             Path filePath = Paths.get(rasterRootPath, source.getEntity().getLayerId(), tilePath,
-                    String.valueOf(z), String.valueOf(x), y + "." + format);
-            if (!Files.exists(filePath)) {
+                    String.valueOf(z), String.valueOf(x), y + "." + format).normalize();
+            Path rootPath = Paths.get(rasterRootPath).normalize();
+            if (!filePath.startsWith(rootPath) || !Files.exists(filePath)) {
                 return null;
             }
             return Files.readAllBytes(filePath);

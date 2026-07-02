@@ -43,10 +43,10 @@ public class PostgisFeatureQueryHandler implements FeatureQueryHandler {
         MapDataSource ds = dataSourceMapper.selectById(source.getDataSourceId());
         if (ds == null) return Collections.emptyList();
 
-        String schema = source.getExternalSchema() != null ? source.getExternalSchema() : ds.getSchemaName();
-        String table = source.getExternalTable();
-        String geomCol = source.getExternalGeomCol() != null ? source.getExternalGeomCol() : "geom";
-        String idCol = source.getExternalIdCol() != null ? source.getExternalIdCol() : "gid";
+        String schema = quoteIdentifier(source.getExternalSchema() != null ? source.getExternalSchema() : ds.getSchemaName());
+        String table = quoteIdentifier(source.getExternalTable());
+        String geomCol = quoteIdentifier(source.getExternalGeomCol() != null ? source.getExternalGeomCol() : "geom");
+        String idCol = quoteIdentifier(source.getExternalIdCol() != null ? source.getExternalIdCol() : "gid");
 
         String sql = String.format(
                 "SELECT %s AS id, row_to_json(t) AS properties, ST_AsGeoJSON(%s) AS geometry " +
@@ -64,10 +64,10 @@ public class PostgisFeatureQueryHandler implements FeatureQueryHandler {
         MapDataSource ds = dataSourceMapper.selectById(source.getDataSourceId());
         if (ds == null) return Collections.emptyList();
 
-        String schema = source.getExternalSchema() != null ? source.getExternalSchema() : ds.getSchemaName();
-        String table = source.getExternalTable();
-        String geomCol = source.getExternalGeomCol() != null ? source.getExternalGeomCol() : "geom";
-        String idCol = source.getExternalIdCol() != null ? source.getExternalIdCol() : "gid";
+        String schema = quoteIdentifier(source.getExternalSchema() != null ? source.getExternalSchema() : ds.getSchemaName());
+        String table = quoteIdentifier(source.getExternalTable());
+        String geomCol = quoteIdentifier(source.getExternalGeomCol() != null ? source.getExternalGeomCol() : "geom");
+        String idCol = quoteIdentifier(source.getExternalIdCol() != null ? source.getExternalIdCol() : "gid");
 
         String sql = String.format(
                 "SELECT %s AS id, row_to_json(t) AS properties, ST_AsGeoJSON(%s) AS geometry " +
@@ -94,8 +94,8 @@ public class PostgisFeatureQueryHandler implements FeatureQueryHandler {
         MapDataSource ds = dataSourceMapper.selectById(source.getDataSourceId());
         if (ds == null) return 0;
 
-        String schema = source.getExternalSchema() != null ? source.getExternalSchema() : ds.getSchemaName();
-        String table = source.getExternalTable();
+        String schema = quoteIdentifier(source.getExternalSchema() != null ? source.getExternalSchema() : ds.getSchemaName());
+        String table = quoteIdentifier(source.getExternalTable());
 
         String sql = String.format("SELECT COUNT(*) FROM %s.%s", schema, table);
         List<Map<String, Object>> result = executeOnDataSource(ds, sql);
@@ -114,9 +114,9 @@ public class PostgisFeatureQueryHandler implements FeatureQueryHandler {
         MapDataSource ds = dataSourceMapper.selectById(source.getDataSourceId());
         if (ds == null) return 0;
 
-        String schema = source.getExternalSchema() != null ? source.getExternalSchema() : ds.getSchemaName();
-        String table = source.getExternalTable();
-        String geomCol = source.getExternalGeomCol() != null ? source.getExternalGeomCol() : "geom";
+        String schema = quoteIdentifier(source.getExternalSchema() != null ? source.getExternalSchema() : ds.getSchemaName());
+        String table = quoteIdentifier(source.getExternalTable());
+        String geomCol = quoteIdentifier(source.getExternalGeomCol() != null ? source.getExternalGeomCol() : "geom");
 
         String sql = String.format(
                 "SELECT COUNT(*) FROM %s.%s WHERE %s && ST_MakeEnvelope(?, ?, ?, ?, 4326)",
@@ -146,6 +146,17 @@ public class PostgisFeatureQueryHandler implements FeatureQueryHandler {
             log.error("PostGIS query failed: dataSource={}, sql={}", ds.getName(), sql, e);
             return Collections.emptyList();
         }
+    }
+
+    /**
+     * 引用 PostgreSQL 标识符，防止 SQL 注入。
+     * 将标识符用双引号包裹，并对内部的引号做转义。
+     */
+    private static String quoteIdentifier(String identifier) {
+        if (identifier == null || identifier.isBlank()) {
+            throw new IllegalArgumentException("SQL 标识符不能为空");
+        }
+        return "\"" + identifier.replace("\"", "\"\"") + "\"";
     }
 
     private List<Map<String, Object>> mapResultSet(ResultSet rs) throws Exception {

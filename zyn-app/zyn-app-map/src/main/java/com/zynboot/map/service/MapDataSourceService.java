@@ -100,7 +100,8 @@ public class MapDataSourceService {
         target.setSchemaName(cmd.getSchemaName());
         target.setDriverClass(cmd.getDriverClass());
         target.setTestQuery(cmd.getTestQuery());
-        target.setStatus(cmd.getStatus() != null ? cmd.getStatus() : "ACTIVE");
+        target.setStatus(cmd.getStatus() != null ? cmd.getStatus()
+                : existing != null ? existing.getStatus() : "ACTIVE");
     }
 
     private DataSourceRes toRes(MapDataSource dataSource) {
