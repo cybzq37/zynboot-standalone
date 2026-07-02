@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
 
 @Data
 @TableName("map_feature")
@@ -19,8 +18,4 @@ public class MapFeature implements Serializable {
     private String sourceId;
     private String properties;
     private String geometry;
-    private String createBy;
-    private LocalDateTime createTime;
-    private String updateBy;
-    private LocalDateTime updateTime;
 }

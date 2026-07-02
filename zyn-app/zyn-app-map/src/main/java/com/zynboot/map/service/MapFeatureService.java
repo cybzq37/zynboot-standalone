@@ -177,8 +177,6 @@ public class MapFeatureService {
                 .sourceId(feature.getSourceId())
                 .properties(feature.getProperties())
                 .geometry(feature.getGeometry())
-                .createTime(feature.getCreateTime())
-                .updateTime(feature.getUpdateTime())
                 .build();
     }
 }

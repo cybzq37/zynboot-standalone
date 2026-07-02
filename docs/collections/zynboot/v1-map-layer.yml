@@ -1,0 +1,29 @@
+info:
+  name: /v1/map/layer
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseURL}}/v1/map/layer"
+  body:
+    type: json
+    data: |-
+      {
+        "name": "极兔",
+        "type": "VECTOR",
+        "targetSrid": 4326,
+        "geometryType": "POLYGON"
+      }
+  auth: inherit
+
+runtime:
+  variables:
+    - name: baseURL
+      value: http://localhost:28082
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

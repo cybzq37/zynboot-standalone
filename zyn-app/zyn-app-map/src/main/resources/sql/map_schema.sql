@@ -303,10 +303,6 @@ CREATE TABLE map_feature (
     source_id         VARCHAR(64)  NOT NULL,
     properties        JSONB,                           -- 属性键值对
     geometry          GEOMETRY     NOT NULL,           -- PostGIS 几何（统一为 target_srid）
-    create_by         VARCHAR(64),
-    create_time       TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    update_by         VARCHAR(64),
-    update_time       TIMESTAMP,
     PRIMARY KEY (id, layer_id)
 ) PARTITION BY HASH (layer_id);
 

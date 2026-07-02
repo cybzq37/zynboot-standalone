@@ -33,10 +33,6 @@
         </dependency>
         <dependency>
             <groupId>com.zynboot</groupId>
-            <artifactId>zyn-infra-satoken</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.zynboot</groupId>
             <artifactId>zyn-infra-web</artifactId>
         </dependency>
         <dependency>

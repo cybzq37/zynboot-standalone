@@ -3,8 +3,6 @@ package com.zynboot.map.response.feature;
 import lombok.Builder;
 import lombok.Value;
 
-import java.time.LocalDateTime;
-
 @Value
 @Builder
 public class FeatureRes {
@@ -13,6 +11,4 @@ public class FeatureRes {
     String sourceId;
     String properties;
     String geometry;
-    LocalDateTime createTime;
-    LocalDateTime updateTime;
 }

@@ -21,7 +21,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 @ApiVersion("1")
 @RequestMapping("/map")
-public class FeatureController {
+public class LayerFeatureController {
 
     private final MapFeatureService featureService;
 

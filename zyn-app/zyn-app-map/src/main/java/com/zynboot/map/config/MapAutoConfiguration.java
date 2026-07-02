@@ -3,7 +3,6 @@ package com.zynboot.map.config;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.inner.OptimisticLockerInnerInterceptor;
 import com.zynboot.infra.mybatis.config.MybatisAutoConfiguration;
-import com.zynboot.infra.satoken.config.SaTokenConfig;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
@@ -14,7 +13,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@AutoConfiguration(after = {SaTokenConfig.class, MybatisAutoConfiguration.class})
+@AutoConfiguration(after = {MybatisAutoConfiguration.class})
 @MapperScan("com.zynboot.map.infrastructure.mapper")
 public class MapAutoConfiguration {
 

@@ -1,0 +1,18 @@
+info:
+  name: /map/layer/{layerId}/field
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseURL}}/map/layer/a44ac1756ebc49a996a3e2bda5440692/field"
+  body:
+    type: json
+    data: '{"name":"aoi_id","type":"STRING"}'
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

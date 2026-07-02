@@ -167,7 +167,7 @@ public final class IdUtils {
         private final long idBase;
 
         // 打包 lastTimestamp(高52位) + sequence(低12位)，用 CAS 原子更新
-        private final AtomicLong state = new AtomicLong(-1L);
+        private final AtomicLong state = new AtomicLong(0L);
 
         private Snowflake(long workerId, long datacenterId) {
             if (workerId > MAX_WORKER_ID || workerId < 0) {
