@@ -1,3 +1,4 @@
 com.zynboot.infra.web.exception.GlobalExceptionAutoConfiguration
 com.zynboot.infra.web.response.ResponseAutoConfiguration
 com.zynboot.infra.web.cors.CorsAutoConfiguration
+com.zynboot.infra.web.version.ApiVersionAutoConfiguration
