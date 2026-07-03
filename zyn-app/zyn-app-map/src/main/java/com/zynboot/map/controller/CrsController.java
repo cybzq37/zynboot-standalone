@@ -1,26 +1,24 @@
 package com.zynboot.map.controller;
 
 import com.zynboot.kit.response.ApiResponse;
-import com.zynboot.map.domain.enums.LayerType;
-import com.zynboot.map.domain.enums.SourceType;
-import com.fasterxml.jackson.annotation.JsonFormat;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.zynboot.infra.web.version.ApiVersion;
-
-import java.util.Arrays;
 import java.util.List;
 
 @RestController
-@ApiVersion("1")
 @RequestMapping("/map/crs")
+@Tag(name = "坐标系", description = "提供地图模块常用坐标系预设")
 public class CrsController {
 
     @GetMapping("/presets")
+    @Operation(summary = "获取坐标系预设列表")
     public ApiResponse<List<CrsPreset>> presets() {
         return ApiResponse.ok(List.of(
                 new CrsPreset(4490, "CGCS2000", "国家大地坐标系"),
@@ -35,9 +33,13 @@ public class CrsController {
 
     @Value
     @AllArgsConstructor
+    @Schema(description = "坐标系预设")
     public static class CrsPreset {
+        @Schema(description = "EPSG 编码", example = "3857")
         int code;
+        @Schema(description = "坐标系名称", example = "Web Mercator")
         String name;
+        @Schema(description = "坐标系说明", example = "Web 墨卡托投影")
         String description;
     }
 }

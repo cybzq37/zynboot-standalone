@@ -37,6 +37,9 @@ public class GlobalResponseBodyAdvice implements ResponseBodyAdvice<Object> {
         if (!properties.isEnabled()) {
             return false;
         }
+        if (isSpringDocEndpoint(returnType)) {
+            return false;
+        }
         if (hasIgnoreResponseWrap(returnType)) {
             return false;
         }
@@ -92,6 +95,15 @@ public class GlobalResponseBodyAdvice implements ResponseBodyAdvice<Object> {
             return true;
         }
         return AnnotatedElementUtils.hasAnnotation(returnType.getContainingClass(), IgnoreResponseWrap.class);
+    }
+
+    private boolean isSpringDocEndpoint(MethodParameter returnType) {
+        Class<?> containingClass = returnType.getContainingClass();
+        Package endpointPackage = containingClass.getPackage();
+        if (endpointPackage == null) {
+            return false;
+        }
+        return endpointPackage.getName().startsWith("org.springdoc");
     }
 
     private boolean isPassthroughReturnType(Class<?> returnType) {

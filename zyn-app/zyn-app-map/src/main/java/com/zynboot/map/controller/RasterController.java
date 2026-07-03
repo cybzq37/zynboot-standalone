@@ -1,11 +1,15 @@
 package com.zynboot.map.controller;
 
-import com.zynboot.infra.web.version.ApiVersion;
 import com.zynboot.kit.exception.BizException;
 import com.zynboot.kit.response.ApiResponse;
 import com.zynboot.map.domain.aggregate.SourceAggregate;
 import com.zynboot.map.response.source.RasterMetaRes;
 import com.zynboot.map.service.MapQueryFacadeService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,20 +23,28 @@ import java.nio.charset.StandardCharsets;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@ApiVersion("1")
 @RequestMapping("/map/source")
+@Tag(name = "栅格源", description = "查询栅格源元数据并下载原始文件")
 public class RasterController {
 
     private final MapQueryFacadeService queryFacadeService;
     private final com.zynboot.infra.storage.service.StorageService storageService;
 
     @GetMapping("/{id}/raster/meta")
-    public ApiResponse<RasterMetaRes> getMeta(@PathVariable String id) {
+    @Operation(summary = "获取栅格源元数据")
+    public ApiResponse<RasterMetaRes> getMeta(@Parameter(description = "源 ID") @PathVariable String id) {
         return ApiResponse.ok(queryFacadeService.getRasterMeta(id));
     }
 
     @GetMapping("/{id}/raster/download")
-    public void download(@PathVariable String id, HttpServletResponse response) {
+    @Operation(summary = "下载栅格源文件")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "栅格文件流",
+            content = @Content(schema = @Schema(type = "string", format = "binary")))
+    public void download(
+            @Parameter(description = "源 ID") @PathVariable String id,
+            @Parameter(hidden = true) HttpServletResponse response) {
         SourceAggregate source = queryFacadeService.requireSource(id);
         try {
             String storageKey = source.getEntity().getStorageKey();

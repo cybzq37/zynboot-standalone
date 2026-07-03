@@ -10,13 +10,16 @@ import com.zynboot.map.response.source.SourceTileRes;
 import com.zynboot.map.service.MapTileReadService;
 import com.zynboot.map.service.MapQueryFacadeService;
 import com.zynboot.map.service.MvtService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
-
-import com.zynboot.infra.web.version.ApiVersion;
 
 import java.time.Duration;
 
@@ -30,8 +33,8 @@ import java.time.Duration;
  */
 @RestController
 @RequiredArgsConstructor
-@ApiVersion("1")
 @RequestMapping("/map")
+@Tag(name = "瓦片服务", description = "提供栅格瓦片、MVT 矢量瓦片、MBTiles 读取与切片任务接口")
 public class TileController {
 
     private final RedisClient redisClient;
@@ -50,14 +53,19 @@ public class TileController {
     // ── 栅格瓦片 ───────────────────────────────────────────
 
     @GetMapping("/tile/{sourceId}/{z}/{x}/{y}.{format}")
+    @Operation(summary = "读取栅格瓦片")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "栅格瓦片二进制流",
+            content = @Content(schema = @Schema(type = "string", format = "binary")))
     public void getTile(
-            @PathVariable String sourceId,
-            @PathVariable int z,
-            @PathVariable int x,
-            @PathVariable int y,
-            @PathVariable String format,
-            @RequestParam(defaultValue = "3857") int srid,
-            HttpServletResponse response) throws Exception {
+            @Parameter(description = "源 ID") @PathVariable String sourceId,
+            @Parameter(description = "瓦片缩放级别", example = "12") @PathVariable int z,
+            @Parameter(description = "瓦片列号", example = "3421") @PathVariable int x,
+            @Parameter(description = "瓦片行号", example = "1678") @PathVariable int y,
+            @Parameter(description = "输出格式，支持 png/jpg/jpeg/webp", example = "png") @PathVariable String format,
+            @Parameter(description = "输出坐标系 EPSG 编码", example = "3857") @RequestParam(defaultValue = "3857") int srid,
+            @Parameter(hidden = true) HttpServletResponse response) throws Exception {
 
         // MVT 走专用端点
         if ("mvt".equalsIgnoreCase(format) || "pbf".equalsIgnoreCase(format)) {
@@ -105,14 +113,19 @@ public class TileController {
      * 失效：图层数据变更时主动清 Redis，Nginx 通过 ETag 变化自动识别
      */
     @GetMapping("/mvt/{layerId}/{z}/{x}/{y}.pbf")
+    @Operation(summary = "读取 MVT 矢量瓦片")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "Mapbox Vector Tile 二进制流",
+            content = @Content(mediaType = "application/vnd.mapbox-vector-tile", schema = @Schema(type = "string", format = "binary")))
     public void getMvt(
-            @PathVariable String layerId,
-            @PathVariable int z,
-            @PathVariable int x,
-            @PathVariable int y,
-            @RequestParam(defaultValue = "3857") int srid,
-            HttpServletRequest request,
-            HttpServletResponse response) throws Exception {
+            @Parameter(description = "图层 ID") @PathVariable String layerId,
+            @Parameter(description = "瓦片缩放级别", example = "12") @PathVariable int z,
+            @Parameter(description = "瓦片列号", example = "3421") @PathVariable int x,
+            @Parameter(description = "瓦片行号", example = "1678") @PathVariable int y,
+            @Parameter(description = "输出坐标系 EPSG 编码", example = "3857") @RequestParam(defaultValue = "3857") int srid,
+            @Parameter(hidden = true) HttpServletRequest request,
+            @Parameter(hidden = true) HttpServletResponse response) throws Exception {
 
         // If-None-Match 头（浏览器/Nginx 缓存验证）
         String ifNoneMatch = request.getHeader("If-None-Match");
@@ -143,20 +156,23 @@ public class TileController {
      * MVT 缓存失效端点（数据变更后调用）。
      */
     @PostMapping("/mvt/{layerId}/invalidate")
-    public ApiResponse<Void> invalidateMvtCache(@PathVariable String layerId) {
+    @Operation(summary = "失效指定图层的 MVT 缓存")
+    public ApiResponse<Void> invalidateMvtCache(@Parameter(description = "图层 ID") @PathVariable String layerId) {
         mvtService.invalidateLayerCache(layerId);
         return ApiResponse.ok(null);
     }
 
     @PostMapping("/source/{id}/tile/task")
-    public ApiResponse<TaskRes> submitTileTask(@PathVariable String id) {
+    @Operation(summary = "提交栅格切片任务")
+    public ApiResponse<TaskRes> submitTileTask(@Parameter(description = "源 ID") @PathVariable String id) {
         return ApiResponse.ok(taskService.submitTileTask(id));
     }
 
     // ── 瓦片状态 ───────────────────────────────────────────
 
     @GetMapping("/source/{id}/tile/status")
-    public ApiResponse<SourceTileRes> tileStatus(@PathVariable String id) {
+    @Operation(summary = "查询源切片状态")
+    public ApiResponse<SourceTileRes> tileStatus(@Parameter(description = "源 ID") @PathVariable String id) {
         return ApiResponse.ok(queryFacadeService.getTileStatus(id));
     }
 
@@ -164,17 +180,22 @@ public class TileController {
 
     /**
      * 从 MBTiles 文件读取瓦片。
-     * 路径：/mvt/mbtiles/{mbtilesPath}/{z}/{x}/{y}.pbf
-     * mbtilesPath: MBTiles 文件路径（相对于 rasterRootPath）
+     * 路径：/mvt/mbtiles/{layerId}/{z}/{x}/{y}.pbf
+     * layerId: 图层 ID，对应其绑定的 MBTiles 数据
      */
     @GetMapping("/mvt/mbtiles/{layerId}/{z}/{x}/{y}.pbf")
+    @Operation(summary = "从 MBTiles 读取矢量瓦片")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+            responseCode = "200",
+            description = "MBTiles 中的 MVT 二进制流",
+            content = @Content(mediaType = "application/vnd.mapbox-vector-tile", schema = @Schema(type = "string", format = "binary")))
     public void getMvtFromMbtiles(
-            @PathVariable String layerId,
-            @PathVariable int z,
-            @PathVariable int x,
-            @PathVariable int y,
-            @RequestParam(defaultValue = "3857") int srid,
-            HttpServletResponse response) throws Exception {
+            @Parameter(description = "图层 ID") @PathVariable String layerId,
+            @Parameter(description = "瓦片缩放级别", example = "12") @PathVariable int z,
+            @Parameter(description = "瓦片列号", example = "3421") @PathVariable int x,
+            @Parameter(description = "瓦片行号", example = "1678") @PathVariable int y,
+            @Parameter(description = "输出坐标系 EPSG 编码，当前仅读取时保留参数", example = "3857") @RequestParam(defaultValue = "3857") int srid,
+            @Parameter(hidden = true) HttpServletResponse response) throws Exception {
         byte[] tileData = tileReadService.readMbtilesTile(layerId, z, x, y);
         if (tileData == null || tileData.length == 0) {
             response.setStatus(404);
