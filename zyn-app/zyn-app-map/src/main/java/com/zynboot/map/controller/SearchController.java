@@ -1,7 +1,7 @@
 package com.zynboot.map.controller;
 
 import com.zynboot.kit.response.ApiResponse;
-import com.zynboot.map.service.MapFeatureService;
+import com.zynboot.map.service.MapLayerFeatureService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -20,7 +20,7 @@ import java.util.Map;
 @Tag(name = "全文检索", description = "提供基于 BM25 的图层全文检索能力")
 public class SearchController {
 
-    private final MapFeatureService featureService;
+    private final MapLayerFeatureService featureService;
 
     /**
      * BM25 全文搜索。

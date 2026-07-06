@@ -8,7 +8,7 @@ CREATE EXTENSION IF NOT EXISTS postgis;
 -- 清理旧表（按依赖顺序反向删除）
 DROP TABLE IF EXISTS map_async_task CASCADE;
 DROP TABLE IF EXISTS map_layer_version CASCADE;
-DROP TABLE IF EXISTS map_feature CASCADE;
+DROP TABLE IF EXISTS map_layer_feature CASCADE;
 DROP TABLE IF EXISTS map_instance_layer CASCADE;
 DROP TABLE IF EXISTS map_publish CASCADE;
 DROP TABLE IF EXISTS map_layer_style CASCADE;
@@ -297,7 +297,7 @@ COMMENT ON TABLE map_source_proxy IS '外部服务代理配置';
 -- id 为 BIGINT Snowflake（8 字节，大致有序，减少 B-tree 页分裂）
 -- 按 layer_id 哈希分区，查询单图层只扫描 1/8 数据
 -- ============================================================
-CREATE TABLE map_feature (
+CREATE TABLE map_layer_feature (
     id                BIGINT       NOT NULL,           -- Snowflake ID
     layer_id          VARCHAR(64)  NOT NULL,           -- 分区键
     source_id         VARCHAR(64)  NOT NULL,
@@ -306,22 +306,22 @@ CREATE TABLE map_feature (
     PRIMARY KEY (id, layer_id)
 ) PARTITION BY HASH (layer_id);
 
-CREATE TABLE map_feature_p0 PARTITION OF map_feature FOR VALUES WITH (MODULUS 8, REMAINDER 0);
-CREATE TABLE map_feature_p1 PARTITION OF map_feature FOR VALUES WITH (MODULUS 8, REMAINDER 1);
-CREATE TABLE map_feature_p2 PARTITION OF map_feature FOR VALUES WITH (MODULUS 8, REMAINDER 2);
-CREATE TABLE map_feature_p3 PARTITION OF map_feature FOR VALUES WITH (MODULUS 8, REMAINDER 3);
-CREATE TABLE map_feature_p4 PARTITION OF map_feature FOR VALUES WITH (MODULUS 8, REMAINDER 4);
-CREATE TABLE map_feature_p5 PARTITION OF map_feature FOR VALUES WITH (MODULUS 8, REMAINDER 5);
-CREATE TABLE map_feature_p6 PARTITION OF map_feature FOR VALUES WITH (MODULUS 8, REMAINDER 6);
-CREATE TABLE map_feature_p7 PARTITION OF map_feature FOR VALUES WITH (MODULUS 8, REMAINDER 7);
+CREATE TABLE map_layer_feature_p0 PARTITION OF map_layer_feature FOR VALUES WITH (MODULUS 8, REMAINDER 0);
+CREATE TABLE map_layer_feature_p1 PARTITION OF map_layer_feature FOR VALUES WITH (MODULUS 8, REMAINDER 1);
+CREATE TABLE map_layer_feature_p2 PARTITION OF map_layer_feature FOR VALUES WITH (MODULUS 8, REMAINDER 2);
+CREATE TABLE map_layer_feature_p3 PARTITION OF map_layer_feature FOR VALUES WITH (MODULUS 8, REMAINDER 3);
+CREATE TABLE map_layer_feature_p4 PARTITION OF map_layer_feature FOR VALUES WITH (MODULUS 8, REMAINDER 4);
+CREATE TABLE map_layer_feature_p5 PARTITION OF map_layer_feature FOR VALUES WITH (MODULUS 8, REMAINDER 5);
+CREATE TABLE map_layer_feature_p6 PARTITION OF map_layer_feature FOR VALUES WITH (MODULUS 8, REMAINDER 6);
+CREATE TABLE map_layer_feature_p7 PARTITION OF map_layer_feature FOR VALUES WITH (MODULUS 8, REMAINDER 7);
 
-CREATE INDEX idx_feature_layer ON map_feature(layer_id);
-CREATE INDEX idx_feature_source ON map_feature(source_id);
-CREATE INDEX idx_feature_geom ON map_feature USING GIST(geometry);
+CREATE INDEX idx_layer_feature_layer ON map_layer_feature(layer_id);
+CREATE INDEX idx_layer_feature_source ON map_layer_feature(source_id);
+CREATE INDEX idx_layer_feature_geom ON map_layer_feature USING GIST(geometry);
 
-COMMENT ON TABLE map_feature IS '矢量要素（千万级，哈希分区）';
-COMMENT ON COLUMN map_feature.id IS 'Snowflake ID（BIGINT，8 字节，大致有序）';
-COMMENT ON COLUMN map_feature.geometry IS 'PostGIS 几何，SRID = 所属图层 target_srid';
+COMMENT ON TABLE map_layer_feature IS '图层矢量要素（千万级，哈希分区）';
+COMMENT ON COLUMN map_layer_feature.id IS 'Snowflake ID（BIGINT，8 字节，大致有序）';
+COMMENT ON COLUMN map_layer_feature.geometry IS 'PostGIS 几何，SRID = 所属图层 target_srid';
 
 -- ============================================================
 -- 12. 图层版本

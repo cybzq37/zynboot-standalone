@@ -3,7 +3,7 @@ package com.zynboot.map.infrastructure.repository;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.zynboot.map.domain.aggregate.SourceAggregate;
 import com.zynboot.map.domain.repository.SourceRepository;
-import com.zynboot.map.infrastructure.entity.MapFeature;
+import com.zynboot.map.infrastructure.entity.MapLayerFeature;
 import com.zynboot.map.infrastructure.entity.MapLayerSource;
 import com.zynboot.map.infrastructure.entity.MapSourceRaster;
 import com.zynboot.map.infrastructure.entity.MapSourceTile;
@@ -24,7 +24,7 @@ public class SourceRepositoryImpl implements SourceRepository {
     private final MapSourceRasterMapper rasterMapper;
     private final MapSourceTileMapper tileMapper;
     private final MapSourceProxyMapper proxyMapper;
-    private final MapFeatureMapper featureMapper;
+    private final MapLayerFeatureMapper featureMapper;
 
     @Override
     public List<SourceAggregate> findByLayerId(String layerId) {
@@ -56,7 +56,7 @@ public class SourceRepositoryImpl implements SourceRepository {
     public void delete(String id) {
         // 级联删除：feature → 子表 → source
         featureMapper.delete(
-                new LambdaQueryWrapper<MapFeature>().eq(MapFeature::getSourceId, id));
+                new LambdaQueryWrapper<MapLayerFeature>().eq(MapLayerFeature::getSourceId, id));
         rasterMapper.deleteById(id);
         tileMapper.deleteById(id);
         proxyMapper.deleteById(id);

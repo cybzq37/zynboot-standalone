@@ -35,7 +35,7 @@ public interface MapMvtMapper {
         "      ST_TileEnvelope(#{z}, #{x}, #{y}),",
         "      4096, 0, true",
         "    ) AS geom",
-        "  FROM map_feature f",
+        "  FROM map_layer_feature f",
         "  WHERE f.layer_id = #{layerId}",
         "    AND f.geometry &amp;&amp; ST_Transform(ST_TileEnvelope(#{z}, #{x}, #{y}), 4326)",
         "  LIMIT #{maxFeatures}",
@@ -54,7 +54,7 @@ public interface MapMvtMapper {
      */
     @org.apache.ibatis.annotations.Select({
         "SELECT EXISTS(",
-        "  SELECT 1 FROM map_feature",
+        "  SELECT 1 FROM map_layer_feature",
         "  WHERE layer_id = #{layerId}",
         "    AND geometry && ST_Transform(ST_TileEnvelope(#{z}, #{x}, #{y}), 4326)",
         ")"
@@ -70,7 +70,7 @@ public interface MapMvtMapper {
      */
     @org.apache.ibatis.annotations.Select({
         "SELECT MD5(COALESCE(MAX(update_time)::text, '') || ':' || COUNT(*)::text)",
-        "FROM map_feature WHERE layer_id = #{layerId}"
+        "FROM map_layer_feature WHERE layer_id = #{layerId}"
     })
     String getLayerEtag(@Param("layerId") String layerId);
 }

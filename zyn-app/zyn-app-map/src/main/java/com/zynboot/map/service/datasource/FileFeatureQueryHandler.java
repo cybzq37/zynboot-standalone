@@ -1,6 +1,6 @@
 package com.zynboot.map.service.datasource;
 
-import com.zynboot.map.infrastructure.mapper.MapFeatureMapper;
+import com.zynboot.map.infrastructure.mapper.MapLayerFeatureMapper;
 import com.zynboot.map.infrastructure.mapper.MapSpatialMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -9,13 +9,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * FILE 模式查询：查 map_feature 表（PostGIS）。
+ * FILE 模式查询：查 map_layer_feature 表（PostGIS）。
  */
 @Component
 @RequiredArgsConstructor
 public class FileFeatureQueryHandler implements FeatureQueryHandler {
 
-    private final MapFeatureMapper featureMapper;
+    private final MapLayerFeatureMapper featureMapper;
     private final MapSpatialMapper spatialMapper;
 
     @Override

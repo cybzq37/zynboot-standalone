@@ -9,7 +9,7 @@ import com.zynboot.map.domain.repository.LayerRepository;
 import com.zynboot.map.domain.repository.SourceRepository;
 import com.zynboot.map.infrastructure.entity.MapSourceRaster;
 import com.zynboot.map.infrastructure.importer.VectorImporter;
-import com.zynboot.map.infrastructure.mapper.MapFeatureMapper;
+import com.zynboot.map.infrastructure.mapper.MapLayerFeatureMapper;
 import com.zynboot.map.infrastructure.mapper.MapLayerFieldMapper;
 import com.zynboot.map.infrastructure.mapper.MapSourceRasterMapper;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +36,7 @@ public class ImportService {
     private final StorageService storageService;
     private final MapSourceRasterMapper rasterMapper;
     private final MapLayerFieldMapper fieldMapper;
-    private final MapFeatureMapper featureMapper;
+    private final MapLayerFeatureMapper featureMapper;
     private final List<VectorImporter> importers;
 
     @Value("${zyn.map.raster.root-path:./map-data/raster}")

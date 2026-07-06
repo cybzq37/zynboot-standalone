@@ -11,7 +11,7 @@ public interface JituFenceMapper {
     @Select("SELECT id, properties::text AS properties, ST_AsGeoJSON(geometry) AS geometry, " +
             "ST_X(ST_PointOnSurface(geometry)) AS centerLng, " +
             "ST_Y(ST_PointOnSurface(geometry)) AS centerLat " +
-            "FROM map_feature " +
+            "FROM map_layer_feature " +
             "WHERE layer_id = #{layerId} " +
             "AND geometry && ST_SetSRID(ST_Point(CAST(#{lng} AS DOUBLE PRECISION), CAST(#{lat} AS DOUBLE PRECISION)), 4326) " +
             "AND ST_Covers(geometry, ST_SetSRID(ST_Point(CAST(#{lng} AS DOUBLE PRECISION), CAST(#{lat} AS DOUBLE PRECISION)), 4326)) " +

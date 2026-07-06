@@ -4,7 +4,7 @@ import com.zynboot.kit.response.ApiResponse;
 import com.zynboot.map.command.feature.FeatureSaveCmd;
 import com.zynboot.map.response.feature.FeaturePageRes;
 import com.zynboot.map.response.feature.FeatureRes;
-import com.zynboot.map.service.MapFeatureService;
+import com.zynboot.map.service.MapLayerFeatureService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,7 +25,7 @@ import java.util.Map;
 @Tag(name = "要素管理", description = "管理图层要素、检索、GeoJSON 输出与聚类分析")
 public class LayerFeatureController {
 
-    private final MapFeatureService featureService;
+    private final MapLayerFeatureService featureService;
 
     @GetMapping("/layer/{layerId}/feature")
     @Operation(summary = "分页查询图层要素")

@@ -1,7 +1,5 @@
 package com.zynboot.map.service;
 
-import com.zynboot.map.infrastructure.entity.MapFeature;
-import com.zynboot.map.infrastructure.mapper.MapFeatureMapper;
 import com.zynboot.map.infrastructure.mapper.MapSpatialMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

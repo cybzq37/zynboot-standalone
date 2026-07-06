@@ -7,8 +7,8 @@ import lombok.Data;
 import java.io.Serializable;
 
 @Data
-@TableName("map_feature")
-public class MapFeature implements Serializable {
+@TableName("map_layer_feature")
+public class MapLayerFeature implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
