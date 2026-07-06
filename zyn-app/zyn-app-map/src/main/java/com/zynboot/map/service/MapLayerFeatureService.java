@@ -5,8 +5,8 @@ import com.zynboot.kit.util.IdUtils;
 import com.zynboot.map.command.feature.FeatureSaveCmd;
 import com.zynboot.map.domain.aggregate.LayerAggregate;
 import com.zynboot.map.domain.repository.LayerRepository;
-import com.zynboot.map.infrastructure.entity.MapFeature;
-import com.zynboot.map.infrastructure.mapper.MapFeatureMapper;
+import com.zynboot.map.infrastructure.entity.MapLayerFeature;
+import com.zynboot.map.infrastructure.mapper.MapLayerFeatureMapper;
 import com.zynboot.map.infrastructure.mapper.MapSpatialMapper;
 import com.zynboot.map.response.feature.FeaturePageRes;
 import com.zynboot.map.response.feature.FeatureRes;
@@ -20,9 +20,9 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
-public class MapFeatureService {
+public class MapLayerFeatureService {
 
-    private final MapFeatureMapper featureMapper;
+    private final MapLayerFeatureMapper featureMapper;
     private final MapSpatialMapper spatialMapper;
     private final FeatureService queryService;
     private final LayerRepository layerRepository;
@@ -60,7 +60,7 @@ public class MapFeatureService {
     }
 
     public FeatureRes getById(Long id) {
-        MapFeature feature = featureMapper.selectViewById(id);
+        MapLayerFeature feature = featureMapper.selectViewById(id);
         if (feature == null) {
             throw BizException.notFound("要素");
         }
@@ -114,7 +114,7 @@ public class MapFeatureService {
 
     @Transactional
     public FeatureRes update(Long id, FeatureSaveCmd cmd) {
-        MapFeature existing = featureMapper.selectViewById(id);
+        MapLayerFeature existing = featureMapper.selectViewById(id);
         if (existing == null) {
             throw BizException.notFound("要素");
         }
@@ -134,7 +134,7 @@ public class MapFeatureService {
 
     @Transactional
     public void delete(Long id) {
-        MapFeature existing = featureMapper.selectViewById(id);
+        MapLayerFeature existing = featureMapper.selectViewById(id);
         if (existing == null) {
             return;
         }
@@ -170,7 +170,7 @@ public class MapFeatureService {
         return parts;
     }
 
-    private FeatureRes toRes(MapFeature feature) {
+    private FeatureRes toRes(MapLayerFeature feature) {
         return FeatureRes.builder()
                 .id(feature.getId())
                 .layerId(feature.getLayerId())
