@@ -7,9 +7,9 @@ spring:
     dynamic:
       datasource:
         master:
-          url: jdbc:postgresql://${DB_HOST:192.168.1.3}:5432/zyn_base
+          url: jdbc:postgresql://${DB_HOST:10.130.20.24}:5432/zyn_base
           username: postgres
-          password: ${POSTGRES_PASSWORD:Zyn@secure#99}
+          password: ${POSTGRES_PASSWORD:Superman@2021}
           driver-class-name: org.postgresql.Driver
       hikari:
         maximum-pool-size: 20
@@ -19,16 +19,16 @@ spring:
         connection-timeout: 10000
   data:
     redis:
-      host: ${REDIS_HOST:192.168.1.3}
+      host: ${REDIS_HOST:10.130.20.24}
       port: 6379
-      password: ${REDIS_PASSWORD:Zyn@secure#99}
+      password: ${REDIS_PASSWORD:Superman@2021}
       database: 0
     elasticsearch:
-      uris: http://${ES_HOST:192.168.1.3}:9200
+      uris: http://${ES_HOST:10.130.20.24}:9200
       username: elastic
       password: ${ELASTIC_PASSWORD:Zyn@secure#99}
   kafka:
-    bootstrap-servers: ${KAFKA_HOST:192.168.1.3}:9092
+    bootstrap-servers: ${KAFKA_HOST:10.130.20.24}:9092
     producer:
       acks: all
       retries: 3
@@ -43,8 +43,8 @@ spring:
 zyn:
   exchange:
     services:
-      sys: http://${SYS_HOST:192.168.1.3}:28081
-      netty: http://${NETTY_HOST:192.168.1.3}:28082
+      sys: http://${SYS_HOST:10.130.20.24}:28081
+      netty: http://${NETTY_HOST:10.130.20.24}:28082
   storage:
     s3:
-      endpoint: http://${S3_HOST:192.168.1.3}:8333
+      endpoint: http://${S3_HOST:10.130.20.24}:8333

@@ -5,10 +5,15 @@ info:
 
 http:
   method: POST
-  url: "{{baseURL}}/map/layer/a44ac1756ebc49a996a3e2bda5440692/field"
+  url: "{{baseURL}}/map/layer/jitu/field"
   body:
     type: json
-    data: '{"name":"aoi_id","type":"STRING"}'
+    data: |-
+      {
+        "name": "type", "type": "INTEGER",
+        "name": "code", "type": "STRING",
+        "name":"aoi_id","type":"STRING"
+      }
   auth: inherit
 
 settings:

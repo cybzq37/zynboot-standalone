@@ -16,9 +16,13 @@ spring:
       schema-locations: classpath:sql/map_schema.sql
 
 zyn:
+  elasticsearch:
+    enabled: false
+  kafka:
+    enabled: false
   map:
     raster:
-      root-path: ./map-data/raster
+      root-path: /map_data/raster
       upload-max-size: 500MB
       allowed-formats: tif,tiff,img,adf
       auto-tile: true

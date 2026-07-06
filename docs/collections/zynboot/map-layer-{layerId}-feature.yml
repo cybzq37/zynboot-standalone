@@ -5,7 +5,7 @@ info:
 
 http:
   method: POST
-  url: "{{baseURL}}/map/layer/a44ac1756ebc49a996a3e2bda5440692/feature"
+  url: "{{baseURL}}/map/layer/jitu/feature"
   body:
     type: json
     data: |-
