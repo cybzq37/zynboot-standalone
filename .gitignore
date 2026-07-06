@@ -41,10 +41,5 @@ __pycache__/
 .pytest_cache/
 .coverage
 htmlcov/
-<<<<<<< HEAD
 data/AOI_BP.json
 data/AOI_building.json
-=======
-data/AOI_building.json
-data/AOI_BP.json
->>>>>>> 07d16462a63b14c8f314e8a0999de09651c17201
