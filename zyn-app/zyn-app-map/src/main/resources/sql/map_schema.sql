@@ -300,7 +300,7 @@ COMMENT ON TABLE map_source_proxy IS '外部服务代理配置';
 CREATE TABLE map_layer_feature (
     id                BIGINT       NOT NULL,           -- Snowflake ID
     layer_id          VARCHAR(64)  NOT NULL,           -- 分区键
-    source_id         VARCHAR(64)  NOT NULL,
+    source_id         VARCHAR(64),                     -- 数据源 ID；手动新增要素时为 NULL
     properties        JSONB,                           -- 属性键值对
     geometry          GEOMETRY     NOT NULL,           -- PostGIS 几何（统一为 target_srid）
     PRIMARY KEY (id, layer_id)
@@ -316,8 +316,9 @@ CREATE TABLE map_layer_feature_p6 PARTITION OF map_layer_feature FOR VALUES WITH
 CREATE TABLE map_layer_feature_p7 PARTITION OF map_layer_feature FOR VALUES WITH (MODULUS 8, REMAINDER 7);
 
 CREATE INDEX idx_layer_feature_layer ON map_layer_feature(layer_id);
-CREATE INDEX idx_layer_feature_source ON map_layer_feature(source_id);
 CREATE INDEX idx_layer_feature_geom ON map_layer_feature USING GIST(geometry);
+-- properties JSONB GIN 索引：支持按任意属性键值过滤（properties @> '{"code":"A001"}'）
+CREATE INDEX idx_layer_feature_props_gin ON map_layer_feature USING GIN (properties jsonb_path_ops);
 
 COMMENT ON TABLE map_layer_feature IS '图层矢量要素（千万级，哈希分区）';
 COMMENT ON COLUMN map_layer_feature.id IS 'Snowflake ID（BIGINT，8 字节，大致有序）';

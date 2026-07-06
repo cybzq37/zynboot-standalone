@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.zynboot.kit.exception.BizException;
 import com.zynboot.kit.util.IdUtils;
 import com.zynboot.map.command.basemap.BasemapSaveCmd;
-import com.zynboot.map.command.layer.LayerFieldSaveCmd;
+import com.zynboot.map.command.layer.LayerFieldItemCmd;
 import com.zynboot.map.command.layer.LayerStyleSaveCmd;
 import com.zynboot.map.infrastructure.entity.MapBasemap;
 import com.zynboot.map.infrastructure.entity.MapLayerField;
@@ -19,7 +19,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -72,27 +78,62 @@ public class MapMetadataService {
     }
 
     @Transactional
-    public LayerFieldRes createField(String layerId, LayerFieldSaveCmd cmd) {
-        MapLayerField field = new MapLayerField();
-        field.setId(IdUtils.uuid());
-        field.setLayerId(layerId);
-        applyField(field, cmd);
-        layerFieldMapper.insert(field);
-        return toLayerFieldRes(layerFieldMapper.selectById(field.getId()));
-    }
+    public List<LayerFieldRes> replaceFields(String layerId, List<LayerFieldItemCmd> items) {
+        items = items != null ? items : List.of();
 
-    @Transactional
-    public LayerFieldRes updateField(String id, LayerFieldSaveCmd cmd) {
-        MapLayerField field = requireField(id);
-        applyField(field, cmd);
-        layerFieldMapper.updateById(field);
-        return toLayerFieldRes(layerFieldMapper.selectById(id));
-    }
+        // 1. 加载该图层现有字段
+        List<MapLayerField> existing = layerFieldMapper.selectList(
+                new LambdaQueryWrapper<MapLayerField>().eq(MapLayerField::getLayerId, layerId));
+        Map<String, MapLayerField> existingById = existing.stream()
+                .collect(Collectors.toMap(MapLayerField::getId, Function.identity()));
 
-    @Transactional
-    public void deleteField(String id) {
-        requireField(id);
-        layerFieldMapper.deleteById(id);
+        // 2. 收集请求体里出现的 id，用于 diff 出要删除的
+        Set<String> seenIds = new HashSet<>();
+        List<MapLayerField> toInsert = new ArrayList<>();
+        List<MapLayerField> toUpdate = new ArrayList<>();
+
+        for (LayerFieldItemCmd item : items) {
+            String id = item.getId();
+            if (id == null || id.isBlank()) {
+                // 新建
+                MapLayerField field = new MapLayerField();
+                field.setId(IdUtils.uuid());
+                field.setLayerId(layerId);
+                applyFieldItem(field, item);
+                toInsert.add(field);
+            } else {
+                // 更新；id 在该图层下不存在时直接忽略（防止越权改其他图层字段）
+                MapLayerField field = existingById.get(id);
+                if (field == null) {
+                    continue;
+                }
+                applyFieldItem(field, item);
+                toUpdate.add(field);
+                seenIds.add(id);
+            }
+        }
+
+        // 3. 删除：DB 中存在但请求体里没有的
+        List<String> toDelete = existing.stream()
+                .map(MapLayerField::getId)
+                .filter(id -> !seenIds.contains(id))
+                .toList();
+
+        if (!toDelete.isEmpty()) {
+            layerFieldMapper.deleteBatchIds(toDelete);
+        }
+        for (MapLayerField field : toUpdate) {
+            layerFieldMapper.updateById(field);
+        }
+        for (MapLayerField field : toInsert) {
+            layerFieldMapper.insert(field);
+        }
+
+        // 4. 返回最新列表（按 sortOrder 升序）
+        return layerFieldMapper.selectList(new LambdaQueryWrapper<MapLayerField>()
+                        .eq(MapLayerField::getLayerId, layerId)
+                        .orderByAsc(MapLayerField::getSortOrder))
+                .stream().map(this::toLayerFieldRes).toList();
     }
 
     public List<LayerStyleRes> listStyles(String layerId) {
@@ -133,12 +174,6 @@ public class MapMetadataService {
         return basemap;
     }
 
-    private MapLayerField requireField(String id) {
-        MapLayerField field = layerFieldMapper.selectById(id);
-        if (field == null) throw BizException.notFound("字段");
-        return field;
-    }
-
     private MapLayerStyle requireStyle(String id) {
         MapLayerStyle style = layerStyleMapper.selectById(id);
         if (style == null) throw BizException.notFound("样式");
@@ -163,7 +198,7 @@ public class MapMetadataService {
         basemap.setWmtsMatrixSet(cmd.getWmtsMatrixSet());
     }
 
-    private void applyField(MapLayerField field, LayerFieldSaveCmd cmd) {
+    private void applyFieldItem(MapLayerField field, LayerFieldItemCmd cmd) {
         field.setName(cmd.getName());
         field.setAlias(cmd.getAlias());
         field.setType(cmd.getType());
