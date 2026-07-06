@@ -159,6 +159,11 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.zynboot</groupId>
+                <artifactId>zyn-app-jitu</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>cn.dev33</groupId>
                 <artifactId>sa-token-spring-boot3-starter</artifactId>
                 <version>${sa-token.version}</version>

@@ -1,0 +1,33 @@
+server:
+  port: 28083
+  servlet:
+    context-path: /jitu
+
+spring:
+  application:
+    name: zyn-jitu
+  profiles:
+    active: @spring.profiles.active@
+  config:
+    import:
+      - classpath:zyn-conf-common.yml
+      - classpath:zyn-conf-@spring.profiles.active@.yml
+  sql:
+    init:
+      mode: never
+      schema-locations: classpath:sql/lbs_aoi.sql
+
+zyn:
+  exchange:
+    services:
+      jitu-geo-provider: ${JITU_GEO_PROVIDER_URL:http://localhost:8080}
+
+jitu:
+  geo:
+    geocode-cache-ttl: 6h
+    result-cache-ttl: 30m
+    code-property: code
+    aoi-id-property: aoi_id
+    layer-mappings:
+      "1": ${JITU_PICKUP_LAYER_ID:}
+      "2": ${JITU_DELIVERY_LAYER_ID:}

@@ -19,5 +19,6 @@
         <module>zyn-app-system</module>
         <module>zyn-app-demo</module>
         <module>zyn-app-map</module>
+        <module>zyn-app-jitu</module>
     </modules>
 </project>
