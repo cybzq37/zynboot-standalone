@@ -16,12 +16,36 @@ CREATE TABLE IF NOT EXISTS lbs_aoi (
     enabled       BOOLEAN      NOT NULL DEFAULT TRUE,
     version       INTEGER      NOT NULL DEFAULT 1,
     create_time   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    update_time   TIMESTAMP
+    update_time   TIMESTAMP,
+    CONSTRAINT chk_lbs_aoi_type CHECK (aoi_type IN ('BP', 'BUILDING'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_lbs_aoi_type_enabled ON lbs_aoi(aoi_type, enabled);
-CREATE INDEX IF NOT EXISTS idx_lbs_aoi_gb_code ON lbs_aoi(gb_code);
-CREATE INDEX IF NOT EXISTS idx_lbs_aoi_geom ON lbs_aoi USING GIST(geometry);
+-- 通用过滤索引：适合 enabled + aoi_type + 主键/分页类查询
+CREATE INDEX IF NOT EXISTS idx_lbs_aoi_type_enabled_id
+    ON lbs_aoi(aoi_type, enabled, id);
+
+-- 行政区过滤索引
+CREATE INDEX IF NOT EXISTS idx_lbs_aoi_gb_code_enabled
+    ON lbs_aoi(gb_code, enabled);
+
+-- 通用空间索引：适合未区分类型的 bbox / 点查面
+CREATE INDEX IF NOT EXISTS idx_lbs_aoi_geom_enabled
+    ON lbs_aoi USING GIST(geometry)
+    WHERE enabled = TRUE;
+
+-- 按类型拆开的空间索引：适合 AOI_BP / AOI_BUILDING 图层独立查询
+CREATE INDEX IF NOT EXISTS idx_lbs_aoi_bp_geom_enabled
+    ON lbs_aoi USING GIST(geometry)
+    WHERE enabled = TRUE AND aoi_type = 'BP';
+
+CREATE INDEX IF NOT EXISTS idx_lbs_aoi_building_geom_enabled
+    ON lbs_aoi USING GIST(geometry)
+    WHERE enabled = TRUE AND aoi_type = 'BUILDING';
+
+-- 中心点索引：适合后续按中心点做轻量范围/近邻查询
+CREATE INDEX IF NOT EXISTS idx_lbs_aoi_center_point_enabled
+    ON lbs_aoi USING GIST(center_point)
+    WHERE enabled = TRUE AND center_point IS NOT NULL;
 
 COMMENT ON TABLE lbs_aoi IS '极兔 AOI 数据';
 COMMENT ON COLUMN lbs_aoi.id IS 'AOI 主键，优先直接使用 linknid';
