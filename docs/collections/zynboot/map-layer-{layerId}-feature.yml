@@ -10,7 +10,6 @@ http:
     type: json
     data: |-
       {
-        "sourceId": "614982e8982e46d997c158814eb00b83",
         "properties": "{\"type\": 1, \"code\": \"A001\", \"aoi_id\": \"12345\"}",
         "geometry": "{\"type\":\"Point\",\"coordinates\":[116.397, 39.908]}"
       }
