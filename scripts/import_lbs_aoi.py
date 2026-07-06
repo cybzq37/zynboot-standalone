@@ -52,10 +52,10 @@ SOURCE_FILES = [
         "path": AOI_BP_FILE,
         "aoi_type": "BP",
     },
-    {
-        "path": AOI_BUILDING_FILE,
-        "aoi_type": "BUILDING",
-    },
+    # {
+    #     "path": AOI_BUILDING_FILE,
+    #     "aoi_type": "BUILDING",
+    # },
 ]
 
 # 导入行为配置
