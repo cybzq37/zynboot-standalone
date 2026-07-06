@@ -11,6 +11,6 @@ public interface JituAoiMapper {
     @Select("SELECT id, aoi_type AS aoiType, aoi_name AS aoiName, address, gb_code AS gbCode, kind, " +
             "longitude, latitude, properties::text AS properties, " +
             "COALESCE(geojson::text, ST_AsGeoJSON(geometry)) AS geojson " +
-            "FROM lbs_aoi WHERE id = #{id} AND enabled = TRUE")
-    JituAoiView selectEnabledById(@Param("id") String id);
+            "FROM lbs_aoi WHERE id = #{id}")
+    JituAoiView selectById(@Param("id") String id);
 }

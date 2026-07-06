@@ -181,10 +181,7 @@ def build_insert_sql(table_name: str) -> str:
                 geometry,
                 center_point,
                 properties,
-                geojson,
-                enabled,
-                version,
-                update_time
+                geojson
             ) VALUES %s
             ON CONFLICT (id) DO UPDATE SET
                 aoi_type = EXCLUDED.aoi_type,
@@ -197,10 +194,7 @@ def build_insert_sql(table_name: str) -> str:
                 geometry = EXCLUDED.geometry,
                 center_point = EXCLUDED.center_point,
                 properties = EXCLUDED.properties,
-                geojson = EXCLUDED.geojson,
-                enabled = EXCLUDED.enabled,
-                version = EXCLUDED.version,
-                update_time = CURRENT_TIMESTAMP
+                geojson = EXCLUDED.geojson
         """
 
     return f"""
@@ -216,10 +210,7 @@ def build_insert_sql(table_name: str) -> str:
             geometry,
             center_point,
             properties,
-            geojson,
-            enabled,
-            version,
-            update_time
+            geojson
         ) VALUES %s
     """
 
@@ -236,10 +227,7 @@ def insert_batch(cursor, table_name: str, rows: list[tuple]) -> None:
                 ELSE ST_PointOnSurface(ST_SetSRID(ST_GeomFromGeoJSON(%s), 4326))
             END,
             %s::jsonb,
-            %s::jsonb,
-            TRUE,
-            1,
-            CURRENT_TIMESTAMP
+            %s::jsonb
         )
     """
     execute_values(cursor, sql, rows, template=template, page_size=len(rows))
@@ -298,10 +286,12 @@ def map_feature_to_row(feature: dict, aoi_type: str) -> tuple | None:
 
 # ==================== 主流程 ====================
 
-def import_file(connection, source_file: Path, aoi_type: str, table_name: str) -> tuple[int, int, int]:
+def import_file(connection, source_file: Path, aoi_type: str, table_name: str) -> tuple[int, int, int, int]:
     inserted = 0
     skipped = 0
+    duplicates = 0
     seen = 0
+    seen_ids: set[str] = set()
     batch: list[tuple] = []
 
     log(f"开始导入 {source_file.name} -> {table_name}，类型={aoi_type}")
@@ -314,6 +304,12 @@ def import_file(connection, source_file: Path, aoi_type: str, table_name: str) -
             if row is None:
                 skipped += 1
                 continue
+
+            aoi_id = row[0]
+            if aoi_id in seen_ids:
+                duplicates += 1
+                continue
+            seen_ids.add(aoi_id)
 
             batch.append(row)
             if len(batch) >= BATCH_SIZE:
@@ -332,7 +328,7 @@ def import_file(connection, source_file: Path, aoi_type: str, table_name: str) -
 
             if seen % PROGRESS_EVERY == 0:
                 elapsed = time.time() - start
-                log(f"{source_file.name}: 已扫描 {seen} 条，已写入 {inserted} 条，已跳过 {skipped} 条，用时 {elapsed:.1f}s")
+                log(f"{source_file.name}: 已扫描 {seen} 条，已写入 {inserted} 条，已跳过 {skipped} 条，重复 {duplicates} 条，用时 {elapsed:.1f}s")
 
         if batch:
             try:
@@ -348,8 +344,8 @@ def import_file(connection, source_file: Path, aoi_type: str, table_name: str) -
                 skipped += skip_count
 
     elapsed = time.time() - start
-    log(f"完成 {source_file.name}：扫描 {seen} 条，写入 {inserted} 条，跳过 {skipped} 条，用时 {elapsed:.1f}s")
-    return seen, inserted, skipped
+    log(f"完成 {source_file.name}：扫描 {seen} 条，写入 {inserted} 条，跳过 {skipped} 条，重复 {duplicates} 条，用时 {elapsed:.1f}s")
+    return seen, inserted, skipped, duplicates
 
 
 def main() -> None:
@@ -374,9 +370,10 @@ def main() -> None:
         total_seen = 0
         total_inserted = 0
         total_skipped = 0
+        total_duplicates = 0
 
         for source in SOURCE_FILES:
-            seen, inserted, skipped = import_file(
+            seen, inserted, skipped, duplicates = import_file(
                 connection=connection,
                 source_file=Path(source["path"]),
                 aoi_type=source["aoi_type"],
@@ -385,8 +382,9 @@ def main() -> None:
             total_seen += seen
             total_inserted += inserted
             total_skipped += skipped
+            total_duplicates += duplicates
 
-        log(f"全部完成：扫描 {total_seen} 条，写入 {total_inserted} 条，跳过 {total_skipped} 条")
+        log(f"全部完成：扫描 {total_seen} 条，写入 {total_inserted} 条，跳过 {total_skipped} 条，重复 {total_duplicates} 条")
     finally:
         connection.close()
 

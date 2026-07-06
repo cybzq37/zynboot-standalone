@@ -58,7 +58,7 @@ public class GeoResolveService {
             throw BizException.badRequest("围栏未绑定 AOI");
         }
 
-        JituAoiView aoi = jituAoiMapper.selectEnabledById(aoiId);
+        JituAoiView aoi = jituAoiMapper.selectById(aoiId);
         if (aoi == null) {
             throw BizException.notFound("AOI");
         }
