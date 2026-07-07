@@ -5,13 +5,10 @@ info:
 
 http:
   method: GET
-  url: "{{baseURL}}/map/layer/layer_lbs_aoi/feature?bbox=116.0,39.7,116.5,40.0&sourceId=src_lbs_aoi"
+  url: "{{baseURL}}/map/layer/layer_lbs_aoi/feature?bbox=116.0,39.7,116.5,40.0"
   params:
     - name: bbox
       value: 116.0,39.7,116.5,40.0
-      type: query
-    - name: sourceId
-      value: src_lbs_aoi
       type: query
   auth: inherit
 
