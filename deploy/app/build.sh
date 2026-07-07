@@ -3,6 +3,7 @@
 # 应用构建 & 部署脚本
 #
 # 用法:
+#   ./build.sh --build-base                                   # 构建基础镜像（工具链，仅需一次）
 #   ./build.sh --jar zyn-app-demo.jar --name demo              # 必填: JAR + 镜像名
 #   ./build.sh --jar app.jar --name demo --tag v1.0            # 自定义版本
 #   ./build.sh --jar app.jar --name demo --port 28080          # 指定端口
@@ -10,13 +11,14 @@
 #   ./build.sh --jar app.jar --name demo --jvm-xmx 1g          # 指定最大堆
 #
 # 参数:
-#   --jar      JAR 文件名（必填，或自动检测当前目录唯一 JAR）
-#   --name     镜像名称（必填）
-#   --tag      镜像版本（默认: latest）
-#   --port     端口映射（默认: 8080）
-#   --profile  Spring Profile（默认: prod）
-#   --jvm-xms  初始堆大小（默认: 512m）
-#   --jvm-xmx  最大堆大小（默认: 512m）
+#   --build-base  构建基础镜像 zyn-base:latest（仅需执行一次）
+#   --jar         JAR 文件名（必填，或自动检测当前目录唯一 JAR）
+#   --name        镜像名称（必填）
+#   --tag         镜像版本（默认: latest）
+#   --port        端口映射（默认: 8080）
+#   --profile     Spring Profile（默认: prod）
+#   --jvm-xms     初始堆大小（默认: 512m）
+#   --jvm-xmx     最大堆大小（默认: 512m）
 #
 # 目录结构:
 #   deploy/app/
@@ -41,10 +43,12 @@ SPRING_PROFILE="prod"
 JVM_XMS="512m"
 JVM_XMX="512m"
 EXTRA_ENV=""
+BUILD_BASE=false
 
 # ── 解析参数 ─────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --build-base) BUILD_BASE=true;    shift   ;;
     --jar)      JAR_FILE="$2";       shift 2 ;;
     --name)     IMAGE_NAME="$2";     shift 2 ;;
     --tag)      IMAGE_TAG="$2";      shift 2 ;;
@@ -56,6 +60,15 @@ while [[ $# -gt 0 ]]; do
     *)          JAR_FILE="$1";       shift   ;;
   esac
 done
+
+# ── 构建基础镜像 ─────────────────────────────────────────────
+if [ "$BUILD_BASE" = true ]; then
+  echo "构建基础镜像: zyn-base:latest"
+  docker build -t zyn-base:latest -f image/Dockerfile.base image/
+  echo "✓ 基础镜像构建完成: zyn-base:latest"
+  echo "  后续部署只需: ./build.sh --jar <file.jar> --name <name> --port <port>"
+  exit 0
+fi
 
 # ── 自动检测 JAR ────────────────────────────────────────────
 if [ -z "$JAR_FILE" ]; then
@@ -75,6 +88,13 @@ fi
 JAR_BASENAME=$(basename "$JAR_FILE")
 CONTAINER_NAME="${IMAGE_NAME}"
 FULL_IMAGE="${IMAGE_NAME}:${IMAGE_TAG}"
+
+# ── 检查基础镜像 ─────────────────────────────────────────────
+if ! docker image inspect zyn-base:latest > /dev/null 2>&1; then
+  echo "ERROR: 基础镜像 zyn-base:latest 不存在，请先执行:"
+  echo "  ./build.sh --build-base"
+  exit 1
+fi
 
 echo "============================================"
 echo "  Image:    $FULL_IMAGE"

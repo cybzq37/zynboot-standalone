@@ -1,22 +1,7 @@
-FROM eclipse-temurin:21-jre-alpine
+FROM zyn-gis-base:latest
 
 LABEL maintainer="zyn"
-LABEL description="Zyn application runtime with GDAL"
-
-RUN apk add --no-cache \
-      tzdata \
-      curl \
-      wget \
-      bind-tools \
-      busybox-extras \
-      iproute2 \
-      tcpdump \
-      gdal \
-      gdal-tools && \
-    cp /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
-    echo "Asia/Shanghai" > /etc/timezone && \
-    addgroup -g 1000 app && \
-    adduser -u 1000 -G app -s /bin/sh -D app
+LABEL description="Zyn GIS application"
 
 WORKDIR /app
 
