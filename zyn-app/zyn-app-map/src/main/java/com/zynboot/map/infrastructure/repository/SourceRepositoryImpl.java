@@ -43,7 +43,17 @@ public class SourceRepositoryImpl implements SourceRepository {
     }
 
     @Override
+    public boolean existsByLayerId(String layerId) {
+        return mapper.exists(new LambdaQueryWrapper<MapLayerSource>()
+                .eq(MapLayerSource::getLayerId, layerId));
+    }
+
+    @Override
     public void save(SourceAggregate source) {
+        // 业务约束：一个图层最多绑定一个数据源
+        if (existsByLayerId(source.getLayerId())) {
+            throw BizException.badRequest("图层已绑定数据源，不允许重复绑定: layerId=" + source.getLayerId());
+        }
         mapper.insert(source.getEntity());
     }
 
