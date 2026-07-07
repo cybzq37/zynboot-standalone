@@ -31,9 +31,8 @@ public class LayerFeatureController {
     @Operation(summary = "查询图层要素（最多返回 1000 条）")
     public ApiResponse<FeaturePageRes> listByLayer(
             @Parameter(description = "图层 ID") @PathVariable String layerId,
-            @Parameter(description = "来源数据源 ID，不传时返回全部来源数据") @RequestParam(required = false) String sourceId,
             @Parameter(description = "空间过滤框，格式 minx,miny,maxx,maxy") @RequestParam(required = false) String bbox) {
-        return ApiResponse.ok(featureService.listByLayer(layerId, sourceId, bbox));
+        return ApiResponse.ok(featureService.listByLayer(layerId, bbox));
     }
 
     @GetMapping("/layer/{layerId}/search")

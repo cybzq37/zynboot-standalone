@@ -219,11 +219,11 @@ CREATE TABLE map_layer_source (
     update_time         TIMESTAMP
 );
 
-CREATE INDEX idx_source_layer ON map_layer_source(layer_id);
+CREATE UNIQUE INDEX uk_layer_source ON map_layer_source(layer_id);
 CREATE INDEX idx_source_status ON map_layer_source(status);
 CREATE INDEX idx_source_data_source ON map_layer_source(data_source_id) WHERE data_source_id IS NOT NULL;
 
-COMMENT ON TABLE map_layer_source IS '数据源（每次导入/接入一条记录）';
+COMMENT ON TABLE map_layer_source IS '数据源（一图层最多一个数据源）';
 COMMENT ON COLUMN map_layer_source.type IS '数据源类型：FILE/POSTGIS/WMS/WFS/WMTS/TMS/XYZ';
 COMMENT ON COLUMN map_layer_source.format IS '文件格式：CSV/GEOJSON/SHP/GEOTIFF/XYZ';
 COMMENT ON COLUMN map_layer_source.status IS '导入状态：PENDING/PROCESSING/COMPLETED/FAILED';
