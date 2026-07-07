@@ -1,6 +1,10 @@
 package com.zynboot.map.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.zynboot.kit.exception.BizException;
+import com.zynboot.kit.util.DateUtils;
 import com.zynboot.kit.util.IdUtils;
 import com.zynboot.kit.util.JsonUtils;
 import com.zynboot.map.command.feature.FeatureSaveCmd;
@@ -9,6 +13,8 @@ import com.zynboot.map.domain.aggregate.SourceAggregate;
 import com.zynboot.map.domain.repository.LayerRepository;
 import com.zynboot.map.domain.repository.SourceRepository;
 import com.zynboot.map.infrastructure.entity.MapLayerFeature;
+import com.zynboot.map.infrastructure.entity.MapLayerField;
+import com.zynboot.map.infrastructure.mapper.MapLayerFieldMapper;
 import com.zynboot.map.infrastructure.mapper.MapLayerFeatureMapper;
 import com.zynboot.map.infrastructure.mapper.MapSpatialMapper;
 import com.zynboot.map.response.feature.FeaturePageRes;
@@ -31,6 +37,7 @@ public class MapLayerFeatureService {
     private final LayerRepository layerRepository;
     private final SourceRepository sourceRepository;
     private final LayerCacheVersionService layerCacheVersionService;
+    private final MapLayerFieldMapper layerFieldMapper;
 
     /** 单次最多返回的要素数量上限 */
     private static final int MAX_FEATURE_LIMIT = 1000;
@@ -109,12 +116,15 @@ public class MapLayerFeatureService {
         // 一图层一源：自动取图层绑定的数据源 ID，未绑定则为 NULL（手动新增要素）
         SourceAggregate source = sourceRepository.findByLayerId(layerId).stream().findFirst().orElse(null);
         assertWritableSource(source);
+        assertGeometryType(cmd.getGeometry(), layer.getGeometryType());
+        // 填充默认值并校验必填字段
+        JsonNode properties = applyDefaultsAndValidate(layerId, cmd.getProperties());
         long id = IdUtils.snowflakeId();
         featureMapper.insertWithGeometry(
                 id,
                 layerId,
                 source == null ? null : source.getId(),
-                JsonUtils.toJson(cmd.getProperties()),
+                JsonUtils.toJson(properties),
                 JsonUtils.toJson(cmd.getGeometry()),
                 String.valueOf(layer.getTargetSrid()));
         layer.incrementFeatureCount(1);
@@ -133,6 +143,8 @@ public class MapLayerFeatureService {
         // sourceId 不允许通过接口修改，保持原值；校验图层 source 是否可写
         SourceAggregate source = sourceRepository.findByLayerId(existing.getLayerId()).stream().findFirst().orElse(null);
         assertWritableSource(source);
+        assertGeometryType(cmd.getGeometry(), layer.getGeometryType());
+        assertRequiredFields(existing.getLayerId(), cmd.getProperties());
         featureMapper.updateWithGeometry(
                 id,
                 existing.getSourceId(),
@@ -141,6 +153,39 @@ public class MapLayerFeatureService {
                 String.valueOf(layer.getTargetSrid()));
         layerCacheVersionService.bumpVersion(existing.getLayerId());
         return getById(id);
+    }
+
+    /**
+     * 校验传入的 geometry 类型与图层预设的 geometryType 是否一致。
+     * 支持图层 geometryType 为 MULTI* 时接受对应的单值类型（如 POLYGON→Polygon、MULTIPOLYGON→MultiPolygon 均可）。
+     */
+    private void assertGeometryType(JsonNode geometry, String layerGeometryType) {
+        if (geometry == null || geometry.isMissingNode() || geometry.isNull()) {
+            return;
+        }
+        JsonNode typeNode = geometry.get("type");
+        if (typeNode == null || typeNode.isNull()) {
+            throw BizException.badRequest("geometry 缺少 type 字段");
+        }
+        String inputType = typeNode.asText().toUpperCase();
+        if (inputType.equals("GEOMETRYCOLLECTION")) {
+            // GEOMETRYCOLLECTION 只允许图层 geometryType = GEOMETRYCOLLECTION
+            if (!"GEOMETRYCOLLECTION".equals(layerGeometryType)) {
+                throw BizException.badRequest(
+                        "几何类型不匹配：图层要求 " + layerGeometryType + "，传入 GEOMETRYCOLLECTION");
+            }
+            return;
+        }
+        String normalizedLayer = layerGeometryType == null ? "" : layerGeometryType.toUpperCase();
+        String normalizedInput = inputType;
+        if (normalizedLayer.startsWith("MULTI") && !normalizedInput.startsWith("MULTI")) {
+            // MULTI* 图层允许单值类型：如 POLYGON/MULTIPOLYGON 图层均接受 Polygon
+            normalizedInput = "MULTI" + normalizedInput;
+        }
+        if (!normalizedInput.equals(normalizedLayer)) {
+            throw BizException.badRequest(
+                    "几何类型不匹配：图层要求 " + layerGeometryType + "，传入 " + typeNode.asText());
+        }
     }
 
     /**
@@ -154,6 +199,88 @@ public class MapLayerFeatureService {
         String type = source.getType();
         if (!"FILE".equals(type)) {
             throw BizException.badRequest("该图层为 " + type + " 外部数据源，不支持通过本接口创建/修改要素");
+        }
+    }
+
+    /**
+     * 填充默认值并校验必填字段（create 场景）。
+     * <p>规则：
+     * <ul>
+     *   <li>properties 中缺失的字段，若字段定义有 default_value 则自动填充</li>
+     *   <li>填充后仍缺失的 required 字段，抛 400</li>
+     *   <li>已存在的字段值会做类型格式校验（目前仅 DATE 类型）</li>
+     * </ul>
+     */
+    private JsonNode applyDefaultsAndValidate(String layerId, JsonNode properties) {
+        List<MapLayerField> fields = layerFieldMapper.selectList(
+                new LambdaQueryWrapper<MapLayerField>().eq(MapLayerField::getLayerId, layerId));
+        if (fields.isEmpty()) {
+            return properties;
+        }
+        ObjectNode node = properties != null && properties.isObject()
+                ? (ObjectNode) properties
+                : JsonUtils.mapper().createObjectNode();
+        for (MapLayerField field : fields) {
+            JsonNode value = node.get(field.getName());
+            boolean missing = value == null || value.isNull();
+            if (missing) {
+                // 必填字段不填充默认值，强制由用户传入；非必填字段才允许用 default_value 兜底
+                if (!Boolean.TRUE.equals(field.getRequired())) {
+                    String defaultValue = field.getDefaultValue();
+                    if (defaultValue != null && !defaultValue.isBlank()) {
+                        node.put(field.getName(), defaultValue);
+                    }
+                }
+                continue;
+            }
+            // 已存在的字段值做类型格式校验
+            assertFieldType(field, value);
+        }
+        // 必填校验（填充默认值后仍可能缺失）
+        for (MapLayerField field : fields) {
+            if (Boolean.TRUE.equals(field.getRequired())) {
+                JsonNode value = node.get(field.getName());
+                if (value == null || value.isNull()) {
+                    throw BizException.badRequest("缺少必填字段: " + field.getName());
+                }
+            }
+        }
+        return node;
+    }
+
+    /**
+     * 校验必填字段及字段类型（update 场景，不填充默认值）。
+     */
+    private void assertRequiredFields(String layerId, JsonNode properties) {
+        List<MapLayerField> fields = layerFieldMapper.selectList(
+                new LambdaQueryWrapper<MapLayerField>().eq(MapLayerField::getLayerId, layerId));
+        for (MapLayerField field : fields) {
+            JsonNode value = properties == null ? null : properties.get(field.getName());
+            if (value != null && !value.isNull()) {
+                assertFieldType(field, value);
+            }
+            if (Boolean.TRUE.equals(field.getRequired())) {
+                if (value == null || value.isNull()) {
+                    throw BizException.badRequest("缺少必填字段: " + field.getName());
+                }
+            }
+        }
+    }
+
+    /**
+     * 校验字段值格式是否符合声明的类型（目前仅 DATE 类型做格式校验）。
+     * 复用 DateUtils 支持的多种日期格式（ISO、epoch、yyyy-MM-dd、yyyyMMdd、yyyy年MM月dd日 等）。
+     */
+    private void assertFieldType(MapLayerField field, JsonNode value) {
+        String type = field.getType();
+        if (type == null) {
+            return;
+        }
+        if ("DATE".equals(type.toUpperCase())) {
+            String text = value.isTextual() ? value.asText() : value.toString();
+            if (text != null && !text.isBlank() && DateUtils.parseDate(text) == null) {
+                throw BizException.badRequest("字段 " + field.getName() + " 的日期格式无法解析: " + text);
+            }
         }
     }
 

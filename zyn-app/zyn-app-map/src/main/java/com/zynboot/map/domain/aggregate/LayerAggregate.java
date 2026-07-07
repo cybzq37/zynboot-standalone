@@ -42,6 +42,7 @@ public class LayerAggregate {
     public String getName() { return entity.getName(); }
     public String getType() { return entity.getType(); }
     public Integer getTargetSrid() { return entity.getTargetSrid(); }
+    public String getGeometryType() { return entity.getGeometryType(); }
     public Integer getFeatureCount() { return entity.getFeatureCount(); }
     public Integer getSourceCount() { return entity.getSourceCount(); }
 
