@@ -2,9 +2,12 @@ package com.zynboot.map.service;
 
 import com.zynboot.kit.exception.BizException;
 import com.zynboot.kit.util.IdUtils;
+import com.zynboot.kit.util.JsonUtils;
 import com.zynboot.map.command.feature.FeatureSaveCmd;
 import com.zynboot.map.domain.aggregate.LayerAggregate;
+import com.zynboot.map.domain.aggregate.SourceAggregate;
 import com.zynboot.map.domain.repository.LayerRepository;
+import com.zynboot.map.domain.repository.SourceRepository;
 import com.zynboot.map.infrastructure.entity.MapLayerFeature;
 import com.zynboot.map.infrastructure.mapper.MapLayerFeatureMapper;
 import com.zynboot.map.infrastructure.mapper.MapSpatialMapper;
@@ -26,6 +29,7 @@ public class MapLayerFeatureService {
     private final MapSpatialMapper spatialMapper;
     private final FeatureService queryService;
     private final LayerRepository layerRepository;
+    private final SourceRepository sourceRepository;
     private final LayerCacheVersionService layerCacheVersionService;
 
     /** 单次最多返回的要素数量上限 */
@@ -102,13 +106,16 @@ public class MapLayerFeatureService {
     @Transactional
     public FeatureRes create(String layerId, FeatureSaveCmd cmd) {
         LayerAggregate layer = requireLayer(layerId);
+        // 一图层一源：自动取图层绑定的数据源 ID，未绑定则为 NULL（手动新增要素）
+        SourceAggregate source = sourceRepository.findByLayerId(layerId).stream().findFirst().orElse(null);
+        assertWritableSource(source);
         long id = IdUtils.snowflakeId();
         featureMapper.insertWithGeometry(
                 id,
                 layerId,
-                cmd.getSourceId(),
-                cmd.getProperties(),
-                cmd.getGeometry(),
+                source == null ? null : source.getId(),
+                JsonUtils.toJson(cmd.getProperties()),
+                JsonUtils.toJson(cmd.getGeometry()),
                 String.valueOf(layer.getTargetSrid()));
         layer.incrementFeatureCount(1);
         layerRepository.update(layer);
@@ -123,17 +130,31 @@ public class MapLayerFeatureService {
             throw BizException.notFound("要素");
         }
         LayerAggregate layer = requireLayer(existing.getLayerId());
-        String resolvedSourceId = cmd.getSourceId() != null && !cmd.getSourceId().isBlank()
-                ? cmd.getSourceId()
-                : existing.getSourceId();
+        // sourceId 不允许通过接口修改，保持原值；校验图层 source 是否可写
+        SourceAggregate source = sourceRepository.findByLayerId(existing.getLayerId()).stream().findFirst().orElse(null);
+        assertWritableSource(source);
         featureMapper.updateWithGeometry(
                 id,
-                resolvedSourceId,
-                cmd.getProperties(),
-                cmd.getGeometry(),
+                existing.getSourceId(),
+                JsonUtils.toJson(cmd.getProperties()),
+                JsonUtils.toJson(cmd.getGeometry()),
                 String.valueOf(layer.getTargetSrid()));
         layerCacheVersionService.bumpVersion(existing.getLayerId());
         return getById(id);
+    }
+
+    /**
+     * 校验图层绑定的数据源是否支持通过本接口写入要素。
+     * 仅允许无数据源（手动新增）或 FILE 类型；外部数据源（POSTGIS/ES/WMS 等）不允许写入。
+     */
+    private void assertWritableSource(SourceAggregate source) {
+        if (source == null) {
+            return;
+        }
+        String type = source.getType();
+        if (!"FILE".equals(type)) {
+            throw BizException.badRequest("该图层为 " + type + " 外部数据源，不支持通过本接口创建/修改要素");
+        }
     }
 
     @Transactional
