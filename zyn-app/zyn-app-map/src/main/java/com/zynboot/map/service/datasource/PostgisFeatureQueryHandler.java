@@ -1,6 +1,8 @@
 package com.zynboot.map.service.datasource;
 
 import com.baomidou.dynamic.datasource.annotation.DS;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.zynboot.kit.util.JsonUtils;
 import com.zynboot.map.infrastructure.entity.MapDataSource;
 import com.zynboot.map.infrastructure.entity.MapLayerSource;
 import com.zynboot.map.infrastructure.mapper.MapDataSourceMapper;
@@ -47,11 +49,12 @@ public class PostgisFeatureQueryHandler implements FeatureQueryHandler {
         String table = quoteIdentifier(source.getExternalTable());
         String geomCol = quoteIdentifier(source.getExternalGeomCol() != null ? source.getExternalGeomCol() : "geom");
         String idCol = quoteIdentifier(source.getExternalIdCol() != null ? source.getExternalIdCol() : "gid");
+        String propertiesExpr = buildPropertiesExpression(source);
 
         String sql = String.format(
-                "SELECT %s AS id, row_to_json(t) AS properties, ST_AsGeoJSON(%s) AS geometry " +
+                "SELECT %s AS id, %s AS properties, ST_AsGeoJSON(%s) AS geometry " +
                         "FROM %s.%s t LIMIT ? OFFSET ?",
-                idCol, geomCol, schema, table);
+                idCol, propertiesExpr, geomCol, schema, table);
         return executeOnDataSource(ds, sql, limit, offset);
     }
 
@@ -68,13 +71,14 @@ public class PostgisFeatureQueryHandler implements FeatureQueryHandler {
         String table = quoteIdentifier(source.getExternalTable());
         String geomCol = quoteIdentifier(source.getExternalGeomCol() != null ? source.getExternalGeomCol() : "geom");
         String idCol = quoteIdentifier(source.getExternalIdCol() != null ? source.getExternalIdCol() : "gid");
+        String propertiesExpr = buildPropertiesExpression(source);
 
         String sql = String.format(
-                "SELECT %s AS id, row_to_json(t) AS properties, ST_AsGeoJSON(%s) AS geometry " +
+                "SELECT %s AS id, %s AS properties, ST_AsGeoJSON(%s) AS geometry " +
                 "FROM %s.%s t " +
                 "WHERE %s && ST_MakeEnvelope(?, ?, ?, ?, 4326) " +
                 "LIMIT ? OFFSET ?",
-                idCol, geomCol, schema, table, geomCol);
+                idCol, propertiesExpr, geomCol, schema, table, geomCol);
 
         return executeOnDataSource(ds, sql, bbox[0], bbox[1], bbox[2], bbox[3], limit, offset);
     }
@@ -149,6 +153,75 @@ public class PostgisFeatureQueryHandler implements FeatureQueryHandler {
     }
 
     /**
+     * 构建 properties 字段的 SQL 表达式。
+     * <p>
+     * 规则：
+     * <ul>
+     *   <li>若 source.fieldMapping 配置了字段白名单，按白名单用 jsonb_build_object 精确构造</li>
+     *   <li>否则用 to_jsonb(t) 返回数据库行所有字段（不做排除）</li>
+     * </ul>
+     * <p>
+     * fieldMapping 支持两种 JSON 格式：
+     * <ul>
+     *   <li>对象（别名映射）：{"别名": "外部列名"}，例：{"名称": "aoi_name"}</li>
+     *   <li>数组（直接列名）：["aoi_name", "address"]</li>
+     * </ul>
+     */
+    private String buildPropertiesExpression(MapLayerSource source) {
+        String fieldMapping = source.getFieldMapping();
+        if (fieldMapping != null && !fieldMapping.isBlank()) {
+            try {
+                JsonNode node = JsonUtils.mapper().readTree(fieldMapping);
+                String whiteListExpr = buildWhiteListExpression(node);
+                if (whiteListExpr != null) {
+                    return whiteListExpr;
+                }
+            } catch (Exception e) {
+                log.warn("解析 field_mapping 失败，回退到默认模式: {}", fieldMapping, e);
+            }
+        }
+        // 默认：按数据库原样返回全部字段
+        return "to_jsonb(t)";
+    }
+
+    /**
+     * 根据白名单配置构造 jsonb_build_object(...) 表达式。
+     *
+     * @return SQL 表达式；若配置无效返回 null
+     */
+    private String buildWhiteListExpression(JsonNode node) {
+        List<String[]> pairs = new ArrayList<>(); // [alias, column]
+        if (node.isObject()) {
+            node.fields().forEachRemaining(entry -> {
+                String alias = entry.getKey();
+                String column = entry.getValue().asText();
+                if (!alias.isBlank() && !column.isBlank()) {
+                    pairs.add(new String[]{alias, column});
+                }
+            });
+        } else if (node.isArray()) {
+            for (JsonNode item : node) {
+                String column = item.asText();
+                if (!column.isBlank()) {
+                    pairs.add(new String[]{column, column});
+                }
+            }
+        }
+        if (pairs.isEmpty()) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder("jsonb_build_object(");
+        for (int i = 0; i < pairs.size(); i++) {
+            if (i > 0) sb.append(", ");
+            String alias = pairs.get(i)[0].replace("'", "''");
+            String column = quoteIdentifier(pairs.get(i)[1]);
+            sb.append("'").append(alias).append("', t.").append(column);
+        }
+        sb.append(")");
+        return sb.toString();
+    }
+
+    /**
      * 引用 PostgreSQL 标识符，防止 SQL 注入。
      * 将标识符用双引号包裹，并对内部的引号做转义。
      */
@@ -165,11 +238,89 @@ public class PostgisFeatureQueryHandler implements FeatureQueryHandler {
         List<Map<String, Object>> results = new ArrayList<>();
         while (rs.next()) {
             Map<String, Object> row = new LinkedHashMap<>();
+            Object rawProperties = null;
+            Object rawGeometry = null;
             for (int i = 1; i <= colCount; i++) {
-                row.put(meta.getColumnLabel(i), rs.getObject(i));
+                String label = meta.getColumnLabel(i);
+                Object value = unwrapPgObject(rs.getObject(i));
+                switch (label) {
+                    case "properties" -> rawProperties = value;
+                    case "geometry" -> rawGeometry = value;
+                    default -> row.put(label, value);
+                }
             }
+            mergeProperties(row, rawProperties);
+            row.put("geometry", parseGeometry(rawGeometry));
             results.add(row);
         }
         return results;
+    }
+
+    /**
+     * 将 properties JSON 字符串平铺到外层 row。
+     * <p>
+     * 若 properties 为对象，其键值对直接放入 row；遇到与 id、geometry 同名的键时跳过，
+     * 避免覆盖 PostgreSQL 查询返回的主键和几何字段。
+     */
+    private static void mergeProperties(Map<String, Object> row, Object rawProperties) {
+        if (!(rawProperties instanceof String propertiesText) || propertiesText.isBlank()) {
+            return;
+        }
+        try {
+            JsonNode node = JsonUtils.mapper().readTree(propertiesText);
+            if (!node.isObject()) {
+                return;
+            }
+            node.fields().forEachRemaining(entry -> {
+                String key = entry.getKey();
+                if ("id".equals(key) || "geometry".equals(key)) {
+                    return;
+                }
+                row.put(key, JsonUtils.mapper().convertValue(entry.getValue(), Object.class));
+            });
+        } catch (Exception e) {
+            log.warn("解析 properties 失败: {}", propertiesText, e);
+        }
+    }
+
+    /**
+     * 将 GeoJSON 字符串解析为 JSON 对象。
+     */
+    private static Object parseGeometry(Object rawGeometry) {
+        if (!(rawGeometry instanceof String geometryText) || geometryText.isBlank()) {
+            return rawGeometry;
+        }
+        try {
+            return JsonUtils.mapper().readTree(geometryText);
+        } catch (Exception e) {
+            log.warn("解析 geometry 失败: {}", geometryText, e);
+            return geometryText;
+        }
+    }
+
+    /**
+     * 解包 PostgreSQL 特有类型（如 PGobject）。
+     * <p>
+     * JDBC 驱动对 JSONB/JSON/HSTORE 等列默认返回 PGobject，
+     * 其 toString() 形如 {@code <type:value>};直接序列化会输出 {type,value,null} 结构。
+     * 这里取其 value 字段，返回纯字符串。
+     */
+    private static Object unwrapPgObject(Object value) {
+        if (value == null) {
+            return null;
+        }
+        String className = value.getClass().getName();
+        if (className.startsWith("org.postgresql.util.") && "org.postgresql.util.PGobject".equals(className)) {
+            // 反射取 value 字段，避免直接依赖 postgresql 驱动类
+            try {
+                java.lang.reflect.Field valueField = value.getClass().getDeclaredField("value");
+                valueField.setAccessible(true);
+                return valueField.get(value);
+            } catch (ReflectiveOperationException e) {
+                // 回退：PGobject.toString() 对 JSONB 返回纯 JSON 字符串
+                return value.toString();
+            }
+        }
+        return value;
     }
 }

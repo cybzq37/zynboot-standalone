@@ -45,11 +45,10 @@ public class LayerAggregate {
     public Integer getFeatureCount() { return entity.getFeatureCount(); }
     public Integer getSourceCount() { return entity.getSourceCount(); }
 
-    public void updateInfo(String name, String title, String description, Integer renderOrder,
+    public void updateInfo(String name, String description, Integer renderOrder,
                            Boolean visible, Boolean selectable, Boolean editable,
                            Integer minZoom, Integer maxZoom, Double opacity) {
         if (name != null) entity.setName(name);
-        if (title != null) entity.setTitle(title);
         if (description != null) entity.setDescription(description);
         if (renderOrder != null) entity.setRenderOrder(renderOrder);
         if (visible != null) entity.setVisible(visible);

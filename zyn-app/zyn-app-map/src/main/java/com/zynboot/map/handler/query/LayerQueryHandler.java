@@ -14,7 +14,6 @@ public class LayerQueryHandler {
                 .id(e.getId())
                 .groupId(e.getGroupId())
                 .name(e.getName())
-                .title(e.getTitle())
                 .description(e.getDescription())
                 .type(e.getType())
                 .targetSrid(e.getTargetSrid())

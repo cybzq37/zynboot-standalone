@@ -27,8 +27,6 @@ public class LayerSaveCmd {
     @NotBlank(message = "图层名称不能为空")
     String name;
 
-    @Schema(description = "图层标题", example = "道路网络")
-    String title;
     @Schema(description = "图层描述", example = "全市道路中心线数据")
     String description;
 
