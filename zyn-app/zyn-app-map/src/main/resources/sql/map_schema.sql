@@ -160,6 +160,8 @@ CREATE TABLE map_layer_field (
     visible         BOOLEAN      NOT NULL DEFAULT TRUE,
     sortable        BOOLEAN      NOT NULL DEFAULT FALSE,
     searchable      BOOLEAN      NOT NULL DEFAULT FALSE,
+    required        BOOLEAN      NOT NULL DEFAULT FALSE,  -- 是否必填（新增/修改要素时校验）
+    default_value   VARCHAR(512),                      -- 默认值（字符串形式，按字段类型解析）
     sort_order      SMALLINT     NOT NULL DEFAULT 0,
     CONSTRAINT uk_layer_field UNIQUE (layer_id, name)
 );

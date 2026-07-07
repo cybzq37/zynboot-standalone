@@ -6,6 +6,7 @@ import com.zynboot.kit.util.IdUtils;
 import com.zynboot.map.command.basemap.BasemapSaveCmd;
 import com.zynboot.map.command.layer.LayerFieldItemCmd;
 import com.zynboot.map.command.layer.LayerStyleSaveCmd;
+import com.zynboot.map.domain.repository.LayerRepository;
 import com.zynboot.map.infrastructure.entity.MapBasemap;
 import com.zynboot.map.infrastructure.entity.MapLayerField;
 import com.zynboot.map.infrastructure.entity.MapLayerStyle;
@@ -34,6 +35,7 @@ public class MapMetadataService {
     private final MapBasemapMapper basemapMapper;
     private final MapLayerFieldMapper layerFieldMapper;
     private final MapLayerStyleMapper layerStyleMapper;
+    private final LayerRepository layerRepository;
 
     public List<BasemapRes> listBasemaps() {
         return basemapMapper.selectList(new LambdaQueryWrapper<MapBasemap>().orderByAsc(MapBasemap::getSortOrder))
@@ -71,6 +73,7 @@ public class MapMetadataService {
     }
 
     public List<LayerFieldRes> listFields(String layerId) {
+        requireLayer(layerId);
         return layerFieldMapper.selectList(new LambdaQueryWrapper<MapLayerField>()
                         .eq(MapLayerField::getLayerId, layerId)
                         .orderByAsc(MapLayerField::getSortOrder))
@@ -79,6 +82,7 @@ public class MapMetadataService {
 
     @Transactional
     public List<LayerFieldRes> replaceFields(String layerId, List<LayerFieldItemCmd> items) {
+        requireLayer(layerId);
         items = items != null ? items : List.of();
 
         // 1. 加载该图层现有字段
@@ -137,6 +141,7 @@ public class MapMetadataService {
     }
 
     public List<LayerStyleRes> listStyles(String layerId) {
+        requireLayer(layerId);
         return layerStyleMapper.selectList(new LambdaQueryWrapper<MapLayerStyle>()
                         .eq(MapLayerStyle::getLayerId, layerId)
                         .orderByDesc(MapLayerStyle::getIsDefault)
@@ -146,6 +151,7 @@ public class MapMetadataService {
 
     @Transactional
     public LayerStyleRes createStyle(String layerId, LayerStyleSaveCmd cmd) {
+        requireLayer(layerId);
         MapLayerStyle style = new MapLayerStyle();
         style.setId(IdUtils.uuid());
         style.setLayerId(layerId);
@@ -172,6 +178,12 @@ public class MapMetadataService {
         MapBasemap basemap = basemapMapper.selectById(id);
         if (basemap == null) throw BizException.notFound("底图");
         return basemap;
+    }
+
+    private void requireLayer(String layerId) {
+        if (layerRepository.findById(layerId).isEmpty()) {
+            throw BizException.notFound("图层");
+        }
     }
 
     private MapLayerStyle requireStyle(String id) {
@@ -205,6 +217,8 @@ public class MapMetadataService {
         field.setVisible(cmd.getVisible() != null ? cmd.getVisible() : true);
         field.setSortable(cmd.getSortable() != null ? cmd.getSortable() : false);
         field.setSearchable(cmd.getSearchable() != null ? cmd.getSearchable() : false);
+        field.setRequired(cmd.getRequired() != null ? cmd.getRequired() : false);
+        field.setDefaultValue(cmd.getDefaultValue());
         field.setSortOrder(cmd.getSortOrder() != null ? cmd.getSortOrder() : 0);
     }
 
@@ -248,6 +262,8 @@ public class MapMetadataService {
                 .visible(field.getVisible())
                 .sortable(field.getSortable())
                 .searchable(field.getSearchable())
+                .required(field.getRequired())
+                .defaultValue(field.getDefaultValue())
                 .sortOrder(field.getSortOrder())
                 .build();
     }

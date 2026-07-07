@@ -22,5 +22,7 @@ public class MapLayerField implements Serializable {
     private Boolean visible;
     private Boolean sortable;
     private Boolean searchable;
+    private Boolean required;
+    private String defaultValue;
     private Integer sortOrder;
 }

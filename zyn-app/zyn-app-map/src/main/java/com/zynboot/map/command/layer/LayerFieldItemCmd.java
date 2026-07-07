@@ -32,6 +32,10 @@ public class LayerFieldItemCmd {
     private Boolean sortable;
     @Schema(description = "是否可搜索", example = "true")
     private Boolean searchable;
+    @Schema(description = "是否必填（新增/修改要素时校验）", example = "false")
+    private Boolean required;
+    @Schema(description = "默认值（字符串形式，按字段类型解析；为空时按类型自动填充零值）", example = "0")
+    private String defaultValue;
     @Schema(description = "排序值，越小越靠前", example = "1")
     private Integer sortOrder;
 }

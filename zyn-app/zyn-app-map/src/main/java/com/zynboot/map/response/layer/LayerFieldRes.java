@@ -14,5 +14,7 @@ public class LayerFieldRes {
     Boolean visible;
     Boolean sortable;
     Boolean searchable;
+    Boolean required;
+    String defaultValue;
     Integer sortOrder;
 }

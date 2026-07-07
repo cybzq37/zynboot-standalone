@@ -129,9 +129,12 @@ docker image prune -f > /dev/null 2>&1
 # ── 启动新容器 ──────────────────────────────────────────────
 echo "启动容器: $CONTAINER_NAME"
 
+# 预创建日志目录并放开权限，确保容器内 app 用户(uid 1000)可写
+mkdir -p "$(pwd)/logs/${IMAGE_NAME}"
+chmod 777 "$(pwd)/logs/${IMAGE_NAME}"
+
 docker run -d \
   --name "$CONTAINER_NAME" \
-  --network zyn_net \
   -p "${APP_PORT}:${APP_PORT}" \
   -v "$(pwd)/logs/${IMAGE_NAME}:/app/logs" \
   -e SPRING_ACTIVE_PROFILES="$SPRING_PROFILE" \
