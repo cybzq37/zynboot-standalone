@@ -43,3 +43,4 @@ __pycache__/
 htmlcov/
 data/AOI_BP.json
 data/AOI_building.json
+*.tar
