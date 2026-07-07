@@ -28,19 +28,23 @@ public class MapLayerFeatureService {
     private final LayerRepository layerRepository;
     private final LayerCacheVersionService layerCacheVersionService;
 
-    public FeaturePageRes listByLayer(String layerId, String sourceId, String bbox, int pageNum, int pageSize) {
-        int offset = Math.max(pageNum - 1, 0) * pageSize;
+    /** 单次最多返回的要素数量上限 */
+    private static final int MAX_FEATURE_LIMIT = 1000;
+
+    public FeaturePageRes listByLayer(String layerId, String sourceId, String bbox) {
+        int limit = MAX_FEATURE_LIMIT;
+        int offset = 0;
         FeatureService.FeatureQueryResult result;
         if (bbox != null && !bbox.isBlank()) {
-            result = queryService.queryByBbox(layerId, sourceId, parseBbox(bbox), pageSize, offset);
+            result = queryService.queryByBbox(layerId, sourceId, parseBbox(bbox), limit, offset);
         } else {
-            result = queryService.list(layerId, sourceId, pageSize, offset);
+            result = queryService.list(layerId, sourceId, limit, offset);
         }
         return FeaturePageRes.builder()
                 .items(result.items())
                 .total(result.total())
-                .pageNum(pageNum)
-                .pageSize(pageSize)
+                .pageNum(1)
+                .pageSize(limit)
                 .querySourceId(result.sourceId())
                 .querySourceType(result.sourceType())
                 .build();

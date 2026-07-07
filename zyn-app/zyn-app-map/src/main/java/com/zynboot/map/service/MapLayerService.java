@@ -80,7 +80,7 @@ public class MapLayerService {
 
     private void applyLayer(LayerAggregate layer, LayerSaveCmd cmd) {
         layer.updateStructure(cmd.getGroupId(), cmd.getType(), cmd.getTargetSrid(), cmd.getGeometryType());
-        layer.updateInfo(cmd.getName(), cmd.getTitle(), cmd.getDescription(), cmd.getRenderOrder(),
+        layer.updateInfo(cmd.getName(), cmd.getDescription(), cmd.getRenderOrder(),
                 null, null, null, cmd.getMinZoom(), cmd.getMaxZoom(), cmd.getOpacity());
     }
 }

@@ -114,7 +114,6 @@ CREATE TABLE map_layer (
     id              VARCHAR(64)     PRIMARY KEY,
     group_id        VARCHAR(64),                        -- 关联 map_layer_group
     name            VARCHAR(128)    NOT NULL,
-    title           VARCHAR(256),
     description     VARCHAR(512),
     type            VARCHAR(16)     NOT NULL,           -- RASTER / VECTOR
     target_srid     SMALLINT        NOT NULL DEFAULT 4326,

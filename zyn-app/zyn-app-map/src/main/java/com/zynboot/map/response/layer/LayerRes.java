@@ -16,7 +16,6 @@ public class LayerRes {
     String id;
     String groupId;
     String name;
-    String title;
     String description;
     String type;
     Integer targetSrid;
