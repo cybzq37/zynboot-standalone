@@ -72,33 +72,13 @@ public class FeatureService {
     }
 
     private ResolvedSource resolveSource(String layerId, String sourceId, Operation operation) {
+        // 约定：一个图层最多一个数据源，sourceId 参数已不再需要（保留仅为向后兼容）
         List<MapLayerSource> sources = sourceMapper.selectList(
                 new LambdaQueryWrapper<MapLayerSource>()
                         .eq(MapLayerSource::getLayerId, layerId)
-                        .eq(MapLayerSource::getStatus, "COMPLETED")
-                        .orderByDesc(MapLayerSource::getCreateTime));
+                        .eq(MapLayerSource::getStatus, "COMPLETED"));
         if (sources.isEmpty()) {
             throw new IllegalArgumentException("图层没有可查询的数据源: " + layerId);
-        }
-
-        if (sourceId != null && !sourceId.isBlank()) {
-            return sources.stream()
-                    .filter(source -> sourceId.equals(source.getId()))
-                    .findFirst()
-                    .map(ResolvedSource::new)
-                    .orElseThrow(() -> new IllegalArgumentException("数据源不存在或不可查询: " + sourceId));
-        }
-
-        List<String> priority = switch (operation) {
-            case SEARCH -> List.of("FILE", "ELASTICSEARCH", "POSTGIS");
-            case BBOX, LIST -> List.of("FILE", "POSTGIS", "ELASTICSEARCH");
-        };
-        for (String type : priority) {
-            for (MapLayerSource source : sources) {
-                if (type.equals(source.getType())) {
-                    return new ResolvedSource(source);
-                }
-            }
         }
         return new ResolvedSource(sources.get(0));
     }

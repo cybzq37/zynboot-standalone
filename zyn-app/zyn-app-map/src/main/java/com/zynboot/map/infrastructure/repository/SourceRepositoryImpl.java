@@ -1,6 +1,7 @@
 package com.zynboot.map.infrastructure.repository;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.zynboot.kit.exception.BizException;
 import com.zynboot.map.domain.aggregate.SourceAggregate;
 import com.zynboot.map.domain.repository.SourceRepository;
 import com.zynboot.map.infrastructure.entity.MapLayerFeature;

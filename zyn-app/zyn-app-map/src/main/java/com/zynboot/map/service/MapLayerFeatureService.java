@@ -31,14 +31,14 @@ public class MapLayerFeatureService {
     /** 单次最多返回的要素数量上限 */
     private static final int MAX_FEATURE_LIMIT = 1000;
 
-    public FeaturePageRes listByLayer(String layerId, String sourceId, String bbox) {
+    public FeaturePageRes listByLayer(String layerId, String bbox) {
         int limit = MAX_FEATURE_LIMIT;
         int offset = 0;
         FeatureService.FeatureQueryResult result;
         if (bbox != null && !bbox.isBlank()) {
-            result = queryService.queryByBbox(layerId, sourceId, parseBbox(bbox), limit, offset);
+            result = queryService.queryByBbox(layerId, null, parseBbox(bbox), limit, offset);
         } else {
-            result = queryService.list(layerId, sourceId, limit, offset);
+            result = queryService.list(layerId, null, limit, offset);
         }
         return FeaturePageRes.builder()
                 .items(result.items())
