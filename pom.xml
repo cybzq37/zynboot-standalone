@@ -40,6 +40,7 @@
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
     </properties>
 
     <dependencyManagement>
@@ -272,6 +273,10 @@
                     <configuration>
                         <release>${maven.compiler.release}</release>
                         <parameters>true</parameters>
+                        <encoding>UTF-8</encoding>
+                        <compilerArgs>
+                            <arg>-J-Dfile.encoding=UTF-8</arg>
+                        </compilerArgs>
                     </configuration>
                 </plugin>
                 <plugin>
