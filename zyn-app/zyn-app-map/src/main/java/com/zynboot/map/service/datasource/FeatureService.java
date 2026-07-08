@@ -1,6 +1,7 @@
 package com.zynboot.map.service.datasource;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.zynboot.kit.exception.BizException;
 import com.zynboot.map.infrastructure.entity.MapDataSource;
 import com.zynboot.map.infrastructure.entity.MapLayerSource;
 import com.zynboot.map.infrastructure.mapper.MapDataSourceMapper;
@@ -72,22 +73,34 @@ public class FeatureService {
     }
 
     private ResolvedSource resolveSource(String layerId, String sourceId, Operation operation) {
-        // 约定：一个图层最多一个数据源，sourceId 参数已不再需要（保留仅为向后兼容）
         List<MapLayerSource> sources = sourceMapper.selectList(
                 new LambdaQueryWrapper<MapLayerSource>()
-                        .eq(MapLayerSource::getLayerId, layerId)
-                        .eq(MapLayerSource::getStatus, "COMPLETED"));
+                        .eq(MapLayerSource::getLayerId, layerId));
         if (sources.isEmpty()) {
-            throw new IllegalArgumentException("图层没有可查询的数据源: " + layerId);
+            // 无数据源绑定的图层视为本地数据库图层（LOCAL 类型路由），
+            // 要素存储在 map_layer_feature 表（PostGIS），由 FileFeatureQueryHandler 查询
+            MapLayerSource localSource = new MapLayerSource();
+            localSource.setLayerId(layerId);
+            localSource.setType("LOCAL");
+            return new ResolvedSource(localSource);
         }
-        return new ResolvedSource(sources.get(0));
+        // 有数据源绑定，取已就绪的
+        MapLayerSource completed = sources.stream()
+                .filter(s -> "COMPLETED".equals(s.getStatus()))
+                .findFirst()
+                .orElseThrow(() -> {
+                    MapLayerSource first = sources.get(0);
+                    return BizException.badRequest(
+                            "图层数据源未就绪，当前状态: " + first.getStatus() + "，请稍后重试或检查数据源配置");
+                });
+        return new ResolvedSource(completed);
     }
 
     private FeatureQueryHandler requireHandler(String sourceType) {
         return handlers.stream()
                 .filter(handler -> handler.supports(sourceType))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("未找到 sourceType 对应的查询处理器: " + sourceType));
+                .orElseThrow(() -> BizException.badRequest("不支持的数据源类型: " + sourceType));
     }
 
     private enum Operation {

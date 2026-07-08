@@ -20,11 +20,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -81,63 +78,80 @@ public class MapMetadataService {
     }
 
     @Transactional
-    public List<LayerFieldRes> replaceFields(String layerId, List<LayerFieldItemCmd> items) {
+    public List<LayerFieldRes> createFields(String layerId, List<LayerFieldItemCmd> items) {
         requireLayer(layerId);
-        items = items != null ? items : List.of();
+        if (items == null || items.isEmpty()) {
+            throw BizException.badRequest("字段列表不能为空");
+        }
+        // 校验：新增时 name/type 必填
+        for (int i = 0; i < items.size(); i++) {
+            LayerFieldItemCmd item = items.get(i);
+            if (item.getName() == null || item.getName().isBlank()) {
+                throw BizException.badRequest("第 " + (i + 1) + " 个字段缺少 name");
+            }
+            if (item.getType() == null || item.getType().isBlank()) {
+                throw BizException.badRequest("第 " + (i + 1) + " 个字段缺少 type");
+            }
+        }
+        for (LayerFieldItemCmd item : items) {
+            MapLayerField field = new MapLayerField();
+            field.setId(IdUtils.uuid());
+            field.setLayerId(layerId);
+            applyFieldItem(field, item);
+            layerFieldMapper.insert(field);
+        }
+        return listFields(layerId);
+    }
 
-        // 1. 加载该图层现有字段
+    @Transactional
+    public List<LayerFieldRes> updateFields(String layerId, List<LayerFieldItemCmd> items) {
+        requireLayer(layerId);
+        if (items == null || items.isEmpty()) {
+            throw BizException.badRequest("字段列表不能为空");
+        }
+        // 校验：更新时每个对象必须含 id
+        for (int i = 0; i < items.size(); i++) {
+            LayerFieldItemCmd item = items.get(i);
+            if (item.getId() == null || item.getId().isBlank()) {
+                throw BizException.badRequest("第 " + (i + 1) + " 个字段缺少 id");
+            }
+        }
+        // 加载该图层现有字段
         List<MapLayerField> existing = layerFieldMapper.selectList(
                 new LambdaQueryWrapper<MapLayerField>().eq(MapLayerField::getLayerId, layerId));
         Map<String, MapLayerField> existingById = existing.stream()
                 .collect(Collectors.toMap(MapLayerField::getId, Function.identity()));
-
-        // 2. 收集请求体里出现的 id，用于 diff 出要删除的
-        Set<String> seenIds = new HashSet<>();
-        List<MapLayerField> toInsert = new ArrayList<>();
-        List<MapLayerField> toUpdate = new ArrayList<>();
-
+        // 部分更新：仅非 null 字段被写入
         for (LayerFieldItemCmd item : items) {
-            String id = item.getId();
-            if (id == null || id.isBlank()) {
-                // 新建
-                MapLayerField field = new MapLayerField();
-                field.setId(IdUtils.uuid());
-                field.setLayerId(layerId);
-                applyFieldItem(field, item);
-                toInsert.add(field);
-            } else {
-                // 更新；id 在该图层下不存在时直接忽略（防止越权改其他图层字段）
-                MapLayerField field = existingById.get(id);
-                if (field == null) {
-                    continue;
-                }
-                applyFieldItem(field, item);
-                toUpdate.add(field);
-                seenIds.add(id);
+            MapLayerField field = existingById.get(item.getId());
+            if (field == null) {
+                throw BizException.badRequest("字段 id 不存在或不属于该图层: " + item.getId());
             }
-        }
-
-        // 3. 删除：DB 中存在但请求体里没有的
-        List<String> toDelete = existing.stream()
-                .map(MapLayerField::getId)
-                .filter(id -> !seenIds.contains(id))
-                .toList();
-
-        if (!toDelete.isEmpty()) {
-            layerFieldMapper.deleteBatchIds(toDelete);
-        }
-        for (MapLayerField field : toUpdate) {
+            applyFieldItemPartial(field, item);
             layerFieldMapper.updateById(field);
         }
-        for (MapLayerField field : toInsert) {
-            layerFieldMapper.insert(field);
-        }
+        return listFields(layerId);
+    }
 
-        // 4. 返回最新列表（按 sortOrder 升序）
-        return layerFieldMapper.selectList(new LambdaQueryWrapper<MapLayerField>()
-                        .eq(MapLayerField::getLayerId, layerId)
-                        .orderByAsc(MapLayerField::getSortOrder))
-                .stream().map(this::toLayerFieldRes).toList();
+    @Transactional
+    public void deleteField(String id) {
+        MapLayerField field = layerFieldMapper.selectById(id);
+        if (field == null) {
+            throw BizException.notFound("字段");
+        }
+        layerFieldMapper.deleteById(id);
+    }
+
+    @Transactional
+    public void deleteFields(String layerId, List<String> ids) {
+        requireLayer(layerId);
+        if (ids == null || ids.isEmpty()) {
+            throw BizException.badRequest("id 列表不能为空");
+        }
+        // 仅删除属于该图层的字段，防止越权删除其他图层字段
+        layerFieldMapper.delete(new LambdaQueryWrapper<MapLayerField>()
+                .eq(MapLayerField::getLayerId, layerId)
+                .in(MapLayerField::getId, ids));
     }
 
     public List<LayerStyleRes> listStyles(String layerId) {
@@ -217,9 +231,41 @@ public class MapMetadataService {
         field.setVisible(cmd.getVisible() != null ? cmd.getVisible() : true);
         field.setSortable(cmd.getSortable() != null ? cmd.getSortable() : false);
         field.setSearchable(cmd.getSearchable() != null ? cmd.getSearchable() : false);
-        field.setRequired(cmd.getRequired() != null ? cmd.getRequired() : false);
-        field.setDefaultValue(cmd.getDefaultValue());
+        boolean required = cmd.getRequired() != null ? cmd.getRequired() : false;
+        field.setRequired(required);
+        // required=false 且未传 default_value 时按类型自动初始化零值
+        String defaultValue = cmd.getDefaultValue();
+        if ((defaultValue == null || defaultValue.isBlank()) && !required) {
+            defaultValue = typeZeroValue(cmd.getType());
+        }
+        field.setDefaultValue(defaultValue);
         field.setSortOrder(cmd.getSortOrder() != null ? cmd.getSortOrder() : 0);
+    }
+
+    /** 部分更新：仅非 null 字段被写入，未传字段保持不变 */
+    private void applyFieldItemPartial(MapLayerField field, LayerFieldItemCmd cmd) {
+        if (cmd.getName() != null) field.setName(cmd.getName());
+        if (cmd.getAlias() != null) field.setAlias(cmd.getAlias());
+        if (cmd.getType() != null) field.setType(cmd.getType());
+        if (cmd.getVisible() != null) field.setVisible(cmd.getVisible());
+        if (cmd.getSortable() != null) field.setSortable(cmd.getSortable());
+        if (cmd.getSearchable() != null) field.setSearchable(cmd.getSearchable());
+        if (cmd.getRequired() != null) field.setRequired(cmd.getRequired());
+        if (cmd.getDefaultValue() != null) field.setDefaultValue(cmd.getDefaultValue());
+        if (cmd.getSortOrder() != null) field.setSortOrder(cmd.getSortOrder());
+    }
+
+    /** required=false 且未传 default_value 时的类型零值 */
+    private String typeZeroValue(String type) {
+        if (type == null) return null;
+        return switch (type.toUpperCase()) {
+            case "STRING"  -> null;
+            case "INTEGER" -> "0";
+            case "DOUBLE"  -> "0.0";
+            case "BOOLEAN" -> "false";
+            case "DATE"    -> null;
+            default -> null;
+        };
     }
 
     private void applyStyle(MapLayerStyle style, LayerStyleSaveCmd cmd) {

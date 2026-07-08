@@ -62,7 +62,7 @@ public class ImportService {
         UploadedFileInfo uploaded = storageService.upload(file);
 
         SourceAggregate source = SourceAggregate.create(layerId,
-                sourceName != null ? sourceName : originalName, "FILE", format);
+                sourceName != null ? sourceName : originalName, "LOCAL", format);
         source.getEntity().setSourceSrid(parseSrid(sourceSrid));
         source.getEntity().setTargetSrid(layer.getTargetSrid());
         source.getEntity().setStorageKey(uploaded.getKey());

@@ -1,28 +1,25 @@
 package com.zynboot.map.command.layer;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 @Data
-@Schema(description = "图层字段项（批量保存用）")
+@Schema(description = "图层字段项（新增/更新共用；新增时 name/type 必填，更新时 id 必填且仅非 null 字段被更新）")
 public class LayerFieldItemCmd {
 
     private static final String FIELD_TYPE_PATTERN = "STRING|INTEGER|DOUBLE|DATE|BOOLEAN";
 
-    @Schema(description = "字段 ID；为空表示新建，非空表示更新", example = "abc123")
+    @Schema(description = "字段 ID；新增时不传，更新时必填", example = "abc123")
     private String id;
 
-    @Schema(description = "字段名", example = "road_name")
-    @NotBlank
+    @Schema(description = "字段名（新增必填，更新时传入则修改）", example = "road_name")
     private String name;
 
     @Schema(description = "字段显示别名", example = "道路名称")
     private String alias;
 
-    @Schema(description = "字段类型", example = "STRING")
-    @NotBlank
+    @Schema(description = "字段类型（新增必填，更新时传入则修改）", example = "STRING")
     @Pattern(regexp = FIELD_TYPE_PATTERN, message = "字段类型仅支持 STRING/INTEGER/DOUBLE/DATE/BOOLEAN")
     private String type;
 

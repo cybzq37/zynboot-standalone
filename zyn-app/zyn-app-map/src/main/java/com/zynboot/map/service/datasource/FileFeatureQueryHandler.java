@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * FILE 模式查询：查 map_layer_feature 表（PostGIS）。
+ * 本地数据库图层查询：查 map_layer_feature 表（PostGIS）。
  */
 @Component
 @RequiredArgsConstructor
@@ -20,7 +20,7 @@ public class FileFeatureQueryHandler implements FeatureQueryHandler {
 
     @Override
     public boolean supports(String sourceType) {
-        return "FILE".equals(sourceType);
+        return "LOCAL".equals(sourceType);
     }
 
     @Override

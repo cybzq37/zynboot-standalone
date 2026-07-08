@@ -33,17 +33,17 @@ public interface MapSpatialMapper {
     @Select("SELECT * FROM map_layer_feature WHERE layer_id = #{layerId} AND geometry && ST_MakeEnvelope(CAST(#{minX} AS DOUBLE PRECISION), CAST(#{minY} AS DOUBLE PRECISION), CAST(#{maxX} AS DOUBLE PRECISION), CAST(#{maxY} AS DOUBLE PRECISION), 4326) LIMIT #{limit} OFFSET #{offset}")
     List<MapLayerFeature> findByBbox(@Param("layerId") String layerId, @Param("minX") String minX, @Param("minY") String minY, @Param("maxX") String maxX, @Param("maxY") String maxY, @Param("limit") int limit, @Param("offset") int offset);
 
-    @Select("SELECT id, layer_id, source_id, properties, ST_AsGeoJSON(geometry) as geometryFROM map_layer_feature WHERE layer_id = #{layerId} LIMIT #{limit} OFFSET #{offset}")
+    @Select("SELECT id, layer_id, source_id, properties, ST_AsGeoJSON(geometry) as geometry FROM map_layer_feature WHERE layer_id = #{layerId} LIMIT #{limit} OFFSET #{offset}")
     List<Map<String, Object>> findAsGeoJson(@Param("layerId") String layerId, @Param("limit") int limit, @Param("offset") int offset);
 
-    @Select("SELECT id, layer_id, source_id, properties, ST_AsGeoJSON(geometry) as geometry" +
+    @Select("SELECT id, layer_id, source_id, properties, ST_AsGeoJSON(geometry) as geometry " +
             "FROM map_layer_feature WHERE layer_id = #{layerId} AND source_id = #{sourceId} LIMIT #{limit} OFFSET #{offset}")
     List<Map<String, Object>> findAsGeoJsonBySource(@Param("layerId") String layerId,
                                                     @Param("sourceId") String sourceId,
                                                     @Param("limit") int limit,
                                                     @Param("offset") int offset);
 
-    @Select("SELECT id, layer_id, source_id, properties, ST_AsGeoJSON(geometry) as geometry" +
+    @Select("SELECT id, layer_id, source_id, properties, ST_AsGeoJSON(geometry) as geometry " +
             "FROM map_layer_feature WHERE layer_id = #{layerId} " +
             "AND geometry && ST_MakeEnvelope(CAST(#{minX} AS DOUBLE PRECISION), CAST(#{minY} AS DOUBLE PRECISION), CAST(#{maxX} AS DOUBLE PRECISION), CAST(#{maxY} AS DOUBLE PRECISION), 4326) " +
             "LIMIT #{limit} OFFSET #{offset}")
@@ -55,7 +55,7 @@ public interface MapSpatialMapper {
                                                   @Param("limit") int limit,
                                                   @Param("offset") int offset);
 
-    @Select("SELECT id, layer_id, source_id, properties, ST_AsGeoJSON(geometry) as geometry" +
+    @Select("SELECT id, layer_id, source_id, properties, ST_AsGeoJSON(geometry) as geometry " +
             "FROM map_layer_feature WHERE layer_id = #{layerId} AND source_id = #{sourceId} " +
             "AND geometry && ST_MakeEnvelope(CAST(#{minX} AS DOUBLE PRECISION), CAST(#{minY} AS DOUBLE PRECISION), CAST(#{maxX} AS DOUBLE PRECISION), CAST(#{maxY} AS DOUBLE PRECISION), 4326) " +
             "LIMIT #{limit} OFFSET #{offset}")

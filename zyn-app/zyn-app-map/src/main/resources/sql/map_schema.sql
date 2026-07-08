@@ -226,7 +226,7 @@ CREATE INDEX idx_source_status ON map_layer_source(status);
 CREATE INDEX idx_source_data_source ON map_layer_source(data_source_id) WHERE data_source_id IS NOT NULL;
 
 COMMENT ON TABLE map_layer_source IS '数据源（一图层最多一个数据源）';
-COMMENT ON COLUMN map_layer_source.type IS '数据源类型：FILE/POSTGIS/WMS/WFS/WMTS/TMS/XYZ';
+COMMENT ON COLUMN map_layer_source.type IS '数据源类型：LOCAL(矢量本地库)/FILE(栅格文件)/POSTGIS/WMS/WFS/WMTS/TMS/XYZ';
 COMMENT ON COLUMN map_layer_source.format IS '文件格式：CSV/GEOJSON/SHP/GEOTIFF/XYZ';
 COMMENT ON COLUMN map_layer_source.status IS '导入状态：PENDING/PROCESSING/COMPLETED/FAILED';
 COMMENT ON COLUMN map_layer_source.extent IS '本次导入的空间范围';
@@ -293,7 +293,7 @@ CREATE TABLE map_source_proxy (
 COMMENT ON TABLE map_source_proxy IS '外部服务代理配置';
 
 -- ============================================================
--- 11. 矢量要素（FILE 模式，BIGINT Snowflake ID + 哈希分区）
+-- 11. 矢量要素（LOCAL 模式，BIGINT Snowflake ID + 哈希分区）
 -- 数据规模：千万级（最大表）
 -- id 为 BIGINT Snowflake（8 字节，大致有序，减少 B-tree 页分裂）
 -- 按 layer_id 哈希分区，查询单图层只扫描 1/8 数据

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public enum SourceType implements IEnum<String> {
 
+    LOCAL("LOCAL", "本地数据库图层"),
     FILE("FILE", "文件"),
     POSTGIS("POSTGIS", "PostGIS"),
     WMS("WMS", "WMS服务"),
