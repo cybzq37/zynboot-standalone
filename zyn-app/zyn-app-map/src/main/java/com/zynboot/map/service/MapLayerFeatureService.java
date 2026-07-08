@@ -197,7 +197,7 @@ public class MapLayerFeatureService {
             return;
         }
         String type = source.getType();
-        if (!"FILE".equals(type)) {
+        if (!"LOCAL".equals(type)) {
             throw BizException.badRequest("该图层为 " + type + " 外部数据源，不支持通过本接口创建/修改要素");
         }
     }
