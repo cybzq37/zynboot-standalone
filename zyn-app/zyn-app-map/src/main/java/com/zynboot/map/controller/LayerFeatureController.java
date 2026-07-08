@@ -35,15 +35,13 @@ public class LayerFeatureController {
         return ApiResponse.ok(featureService.listByLayer(layerId, bbox));
     }
 
-    @GetMapping("/layer/{layerId}/search")
-    @Operation(summary = "按关键字搜索图层要素")
-    public ApiResponse<FeaturePageRes> search(
+    @GetMapping("/layer/{layerId}/feature/page")
+    @Operation(summary = "分页查询图层要素")
+    public ApiResponse<FeaturePageRes> page(
             @Parameter(description = "图层 ID") @PathVariable String layerId,
-            @Parameter(description = "检索关键字") @RequestParam String query,
-            @Parameter(description = "来源数据源 ID，不传时搜索全部来源数据") @RequestParam(required = false) String sourceId,
             @Parameter(description = "页码", example = "1") @RequestParam(defaultValue = "1") int pageNum,
             @Parameter(description = "每页数量", example = "20") @RequestParam(defaultValue = "20") int pageSize) {
-        return ApiResponse.ok(featureService.search(layerId, sourceId, query, pageNum, pageSize));
+        return ApiResponse.ok(featureService.page(layerId, pageNum, pageSize));
     }
 
     @GetMapping("/layer/{layerId}/feature/geojson")

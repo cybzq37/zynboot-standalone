@@ -61,9 +61,9 @@ public class MapLayerFeatureService {
                 .build();
     }
 
-    public FeaturePageRes search(String layerId, String sourceId, String query, int pageNum, int pageSize) {
+    public FeaturePageRes page(String layerId, int pageNum, int pageSize) {
         int offset = Math.max(pageNum - 1, 0) * pageSize;
-        FeatureService.FeatureQueryResult result = queryService.search(layerId, sourceId, query, pageSize, offset);
+        FeatureService.FeatureQueryResult result = queryService.list(layerId, null, pageSize, offset);
         return FeaturePageRes.builder()
                 .items(result.items())
                 .total(result.total())
