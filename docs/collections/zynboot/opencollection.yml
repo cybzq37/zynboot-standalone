@@ -17,7 +17,7 @@ config:
 request:
   variables:
     - name: baseURL
-      value: http://10.130.20.24:28082
+      value: http://localhost:28082
 bundled: false
 extensions:
   bruno:
