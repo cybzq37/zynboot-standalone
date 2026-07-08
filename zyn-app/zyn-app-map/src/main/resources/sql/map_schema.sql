@@ -116,7 +116,6 @@ CREATE TABLE map_layer (
     name            VARCHAR(128)    NOT NULL,
     description     VARCHAR(512),
     type            VARCHAR(16)     NOT NULL,           -- RASTER / VECTOR
-    target_srid     SMALLINT        NOT NULL DEFAULT 4326,
     geometry_type   VARCHAR(32),                        -- POINT/LINESTRING/POLYGON/MULTIPOINT 等
     extent          GEOMETRY(Polygon, 4326),            -- 图层范围（所有 source 并集）
     feature_count   INTEGER         NOT NULL DEFAULT 0,
@@ -143,8 +142,7 @@ CREATE INDEX idx_layer_render ON map_layer(group_id, render_order);
 
 COMMENT ON TABLE map_layer IS '图层';
 COMMENT ON COLUMN map_layer.type IS '图层类型：RASTER / VECTOR';
-COMMENT ON COLUMN map_layer.target_srid IS '目标坐标系 EPSG 代码，所有导入数据统一转换到此';
-COMMENT ON COLUMN map_layer.extent IS '图层空间范围（所有数据源并集），SRID = target_srid';
+COMMENT ON COLUMN map_layer.extent IS '图层空间范围（所有数据源并集），SRID = 4326';
 COMMENT ON COLUMN map_layer.opacity IS '默认透明度 0.00 ~ 1.00';
 
 -- ============================================================
@@ -201,7 +199,7 @@ CREATE TABLE map_layer_source (
     type                VARCHAR(16)   NOT NULL,       -- FILE / POSTGIS / WMS / WFS / WMTS / TMS / XYZ
     format              VARCHAR(16),                  -- CSV / GEOJSON / SHP / GEOTIFF / XYZ
     source_srid         SMALLINT,                     -- 源数据 EPSG 代码
-    target_srid         SMALLINT,                     -- 目标 EPSG 代码
+    target_srid         SMALLINT,                     -- 目标 EPSG 代码（导入元数据，要素统一存储为 4326）
     storage_key         VARCHAR(512),                 -- 文件存储路径（FILE 时）
     geometry_type       VARCHAR(32),
     feature_count       INTEGER       NOT NULL DEFAULT 0,

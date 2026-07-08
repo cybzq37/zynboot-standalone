@@ -19,6 +19,8 @@ import com.zynboot.map.infrastructure.mapper.MapLayerFeatureMapper;
 import com.zynboot.map.infrastructure.mapper.MapSpatialMapper;
 import com.zynboot.map.response.feature.FeaturePageRes;
 import com.zynboot.map.response.feature.FeatureRes;
+import com.zynboot.map.service.datasource.FeatureQuery;
+import com.zynboot.map.service.datasource.FeatureQueryParser;
 import com.zynboot.map.service.datasource.FeatureService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -38,19 +40,18 @@ public class MapLayerFeatureService {
     private final SourceRepository sourceRepository;
     private final LayerCacheVersionService layerCacheVersionService;
     private final MapLayerFieldMapper layerFieldMapper;
+    private final FeatureQueryParser queryParser;
 
     /** 单次最多返回的要素数量上限 */
     private static final int MAX_FEATURE_LIMIT = 1000;
 
-    public FeaturePageRes listByLayer(String layerId, String bbox) {
+    public FeaturePageRes listByLayer(String layerId, String bbox, String query) {
         int limit = MAX_FEATURE_LIMIT;
         int offset = 0;
-        FeatureService.FeatureQueryResult result;
-        if (bbox != null && !bbox.isBlank()) {
-            result = queryService.queryByBbox(layerId, null, parseBbox(bbox), limit, offset);
-        } else {
-            result = queryService.list(layerId, null, limit, offset);
-        }
+        double[] bboxArr = bbox != null && !bbox.isBlank() ? parseBbox(bbox) : null;
+        FeatureQuery featureQuery = queryParser.parse(layerId, query);
+        FeatureService.FeatureQueryResult result = queryService.queryWithFilter(
+                layerId, null, featureQuery, bboxArr, limit, offset);
         return FeaturePageRes.builder()
                 .items(result.items())
                 .total(result.total())
@@ -61,9 +62,11 @@ public class MapLayerFeatureService {
                 .build();
     }
 
-    public FeaturePageRes page(String layerId, int pageNum, int pageSize) {
+    public FeaturePageRes page(String layerId, int pageNum, int pageSize, String query) {
         int offset = Math.max(pageNum - 1, 0) * pageSize;
-        FeatureService.FeatureQueryResult result = queryService.list(layerId, null, pageSize, offset);
+        FeatureQuery featureQuery = queryParser.parse(layerId, query);
+        FeatureService.FeatureQueryResult result = queryService.queryWithFilter(
+                layerId, null, featureQuery, null, pageSize, offset);
         return FeaturePageRes.builder()
                 .items(result.items())
                 .total(result.total())

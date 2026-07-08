@@ -48,7 +48,6 @@ public class MapLayerService {
                 cmd.getGroupId(),
                 cmd.getName(),
                 cmd.getType(),
-                cmd.getTargetSrid(),
                 cmd.getGeometryType());
         applyLayer(layer, cmd);
         layerRepository.save(layer);
@@ -79,7 +78,7 @@ public class MapLayerService {
     }
 
     private void applyLayer(LayerAggregate layer, LayerSaveCmd cmd) {
-        layer.updateStructure(cmd.getGroupId(), cmd.getType(), cmd.getTargetSrid(), cmd.getGeometryType());
+        layer.updateStructure(cmd.getGroupId(), cmd.getType(), cmd.getGeometryType());
         layer.updateInfo(cmd.getName(), cmd.getDescription(), cmd.getRenderOrder(),
                 null, null, null, cmd.getMinZoom(), cmd.getMaxZoom(), cmd.getOpacity());
     }

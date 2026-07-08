@@ -1,6 +1,7 @@
 package com.zynboot.map.infrastructure.mapper;
 
 import com.zynboot.map.infrastructure.entity.MapLayerFeature;
+import com.zynboot.map.service.datasource.FeatureQuery;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -118,7 +119,7 @@ public interface MapSpatialMapper {
         "FROM map_layer_feature",
         "WHERE layer_id = #{layerId}",
         "  AND properties @@@ #{query}",
-        "  AND geometry &amp;&amp; ST_MakeEnvelope(CAST(#{minX} AS DOUBLE PRECISION), CAST(#{minY} AS DOUBLE PRECISION), CAST(#{maxX} AS DOUBLE PRECISION), CAST(#{maxY} AS DOUBLE PRECISION), 4326)",
+        "  AND geometry::geometry &amp;&amp; ST_MakeEnvelope(CAST(#{minX} AS DOUBLE PRECISION), CAST(#{minY} AS DOUBLE PRECISION), CAST(#{maxX} AS DOUBLE PRECISION), CAST(#{maxY} AS DOUBLE PRECISION), 4326)",
         "ORDER BY relevance DESC",
         "LIMIT #{limit} OFFSET #{offset}",
         "</script>"
@@ -131,4 +132,76 @@ public interface MapSpatialMapper {
                                                   @Param("maxY") String maxY,
                                                   @Param("limit") int limit,
                                                   @Param("offset") int offset);
+
+    // ── 带 filter + sort 的通用查询（properties JSONB 属性筛选） ──
+
+    @Select({
+        "<script>",
+        "SELECT id, layer_id, source_id, properties, ST_AsGeoJSON(geometry) as geometry",
+        "FROM map_layer_feature",
+        "WHERE layer_id = #{layerId}",
+        "<if test='bbox != null'>",
+        "  AND geometry::geometry &amp;&amp; ST_MakeEnvelope(CAST(#{bbox[0]} AS DOUBLE PRECISION), CAST(#{bbox[1]} AS DOUBLE PRECISION), CAST(#{bbox[2]} AS DOUBLE PRECISION), CAST(#{bbox[3]} AS DOUBLE PRECISION), 4326)",
+        "</if>",
+        "<foreach collection='query.filter' item='c' separator=''>",
+        "  <choose>",
+        "    <when test='c.op == \"eq\"'>AND properties->>'${c.field}' = #{c.value}</when>",
+        "    <when test='c.op == \"neq\"'>AND properties->>'${c.field}' != #{c.value}</when>",
+        "    <when test='c.op == \"like\"'>AND properties->>'${c.field}' ILIKE CONCAT('%', #{c.value}, '%')</when>",
+        "    <when test='c.op == \"gt\"'>AND (properties->>'${c.field}')::numeric &gt; #{c.value}</when>",
+        "    <when test='c.op == \"gte\"'>AND (properties->>'${c.field}')::numeric &gt;= #{c.value}</when>",
+        "    <when test='c.op == \"lt\"'>AND (properties->>'${c.field}')::numeric &lt; #{c.value}</when>",
+        "    <when test='c.op == \"lte\"'>AND (properties->>'${c.field}')::numeric &lt;= #{c.value}</when>",
+        "    <when test='c.op == \"in\"'>",
+        "      AND properties->>'${c.field}' IN",
+        "      <foreach collection='c.value' item='v' open='(' separator=',' close=')'>#{v}</foreach>",
+        "    </when>",
+        "    <when test='c.op == \"isnull\"'>AND properties->>'${c.field}' IS NULL</when>",
+        "    <when test='c.op == \"notnull\"'>AND properties->>'${c.field}' IS NOT NULL</when>",
+        "  </choose>",
+        "</foreach>",
+        "<if test='query.sort != null and query.sort.size() > 0'>",
+        "  ORDER BY",
+        "  <foreach collection='query.sort' item='s' separator=', '>",
+        "    (properties->>'${s.field}') ${s.order}",
+        "  </foreach>",
+        "</if>",
+        "LIMIT #{limit} OFFSET #{offset}",
+        "</script>"
+    })
+    List<Map<String, Object>> findWithQuery(@Param("layerId") String layerId,
+                                             @Param("bbox") double[] bbox,
+                                             @Param("query") FeatureQuery query,
+                                             @Param("limit") int limit,
+                                             @Param("offset") int offset);
+
+    @Select({
+        "<script>",
+        "SELECT COUNT(*) FROM map_layer_feature",
+        "WHERE layer_id = #{layerId}",
+        "<if test='bbox != null'>",
+        "  AND geometry::geometry &amp;&amp; ST_MakeEnvelope(CAST(#{bbox[0]} AS DOUBLE PRECISION), CAST(#{bbox[1]} AS DOUBLE PRECISION), CAST(#{bbox[2]} AS DOUBLE PRECISION), CAST(#{bbox[3]} AS DOUBLE PRECISION), 4326)",
+        "</if>",
+        "<foreach collection='query.filter' item='c' separator=''>",
+        "  <choose>",
+        "    <when test='c.op == \"eq\"'>AND properties->>'${c.field}' = #{c.value}</when>",
+        "    <when test='c.op == \"neq\"'>AND properties->>'${c.field}' != #{c.value}</when>",
+        "    <when test='c.op == \"like\"'>AND properties->>'${c.field}' ILIKE CONCAT('%', #{c.value}, '%')</when>",
+        "    <when test='c.op == \"gt\"'>AND (properties->>'${c.field}')::numeric &gt; #{c.value}</when>",
+        "    <when test='c.op == \"gte\"'>AND (properties->>'${c.field}')::numeric &gt;= #{c.value}</when>",
+        "    <when test='c.op == \"lt\"'>AND (properties->>'${c.field}')::numeric &lt; #{c.value}</when>",
+        "    <when test='c.op == \"lte\"'>AND (properties->>'${c.field}')::numeric &lt;= #{c.value}</when>",
+        "    <when test='c.op == \"in\"'>",
+        "      AND properties->>'${c.field}' IN",
+        "      <foreach collection='c.value' item='v' open='(' separator=',' close=')'>#{v}</foreach>",
+        "    </when>",
+        "    <when test='c.op == \"isnull\"'>AND properties->>'${c.field}' IS NULL</when>",
+        "    <when test='c.op == \"notnull\"'>AND properties->>'${c.field}' IS NOT NULL</when>",
+        "  </choose>",
+        "</foreach>",
+        "</script>"
+    })
+    long countWithQuery(@Param("layerId") String layerId,
+                        @Param("bbox") double[] bbox,
+                        @Param("query") FeatureQuery query);
 }

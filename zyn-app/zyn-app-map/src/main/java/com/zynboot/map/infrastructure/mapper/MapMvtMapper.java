@@ -31,13 +31,13 @@ public interface MapMvtMapper {
         "    f.source_id,",
         "    f.properties,",
         "    ST_AsMVTGeom(",
-        "      CASE WHEN #{srid} != 4326 THEN ST_Transform(f.geometry, #{srid}) ELSE f.geometry END,",
+        "      CASE WHEN #{srid} != 4326 THEN ST_Transform(f.geometry::geometry, #{srid}) ELSE f.geometry::geometry END,",
         "      ST_TileEnvelope(#{z}, #{x}, #{y}),",
         "      4096, 0, true",
         "    ) AS geom",
         "  FROM map_layer_feature f",
         "  WHERE f.layer_id = #{layerId}",
-        "    AND f.geometry &amp;&amp; ST_Transform(ST_TileEnvelope(#{z}, #{x}, #{y}), 4326)",
+        "    AND f.geometry::geometry &amp;&amp; ST_Transform(ST_TileEnvelope(#{z}, #{x}, #{y}), 4326)",
         "  LIMIT #{maxFeatures}",
         ") tile",
         "</script>"
@@ -56,7 +56,7 @@ public interface MapMvtMapper {
         "SELECT EXISTS(",
         "  SELECT 1 FROM map_layer_feature",
         "  WHERE layer_id = #{layerId}",
-        "    AND geometry && ST_Transform(ST_TileEnvelope(#{z}, #{x}, #{y}), 4326)",
+        "    AND geometry::geometry && ST_Transform(ST_TileEnvelope(#{z}, #{x}, #{y}), 4326)",
         ")"
     })
     boolean hasFeatures(@Param("layerId") String layerId,

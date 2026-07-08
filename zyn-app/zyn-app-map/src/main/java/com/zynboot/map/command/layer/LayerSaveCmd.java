@@ -3,7 +3,6 @@ package com.zynboot.map.command.layer;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -38,8 +37,7 @@ public class LayerSaveCmd {
     @Pattern(regexp = "RASTER|VECTOR", message = "图层类型仅支持 RASTER 或 VECTOR")
     String type;
 
-    @Schema(description = "目标坐标系 EPSG 编码", example = "3857")
-    @NotNull(message = "目标坐标系不能为空")
+    @Schema(description = "目标坐标系 EPSG 编码（已废弃，要素统一存储为 4326）", example = "4326", deprecated = true)
     Integer targetSrid;
 
     /**

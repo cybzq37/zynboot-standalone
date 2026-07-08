@@ -19,7 +19,6 @@ public class MapLayer implements Serializable {
     private String name;
     private String description;
     private String type;
-    private Integer targetSrid;
     private String geometryType;
     private Integer featureCount;
     private Integer sourceCount;
