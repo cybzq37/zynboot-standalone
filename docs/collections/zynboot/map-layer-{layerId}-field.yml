@@ -5,40 +5,30 @@ info:
 
 http:
   method: PUT
-  url: "{{baseURL}}/map/layer/jitu/field"
+  url: "{{baseURL}}/map/layer/layer-jitu/field"
   body:
     type: json
     data: |-
       [
           {
-            "id": "91290900607d4de992dfa894cd86fc94",
-            "layerId": "jitu",
+            "layerId": "layer-jitu",
             "name": "aoi_id",
-            "type": "STRING",
-            "visible": true,
-            "sortable": false,
-            "searchable": false,
-            "sortOrder": 0
+            "type": "STRING"
           },
           {
-            "id": "a423a76c32ad4263847ba9f20d5e18b1",
-            "layerId": "jitu",
+            "layerId": "layer-jitu",
             "name": "code",
-            "type": "STRING",
-            "visible": true,
-            "sortable": false,
-            "searchable": false,
-            "sortOrder": 0
+            "type": "STRING"
           },
           {
-            "id": "f7c4919200534f599f82f37f2dbbecbf",
-            "layerId": "jitu",
+            "layerId": "layer-jitu",
             "name": "type",
-            "type": "INTEGER",
-            "visible": true,
-            "sortable": false,
-            "searchable": false,
-            "sortOrder": 0
+            "type": "INTEGER"
+          },
+            {
+            "layerId": "layer-jitu",
+            "name": "name",
+            "type": "STRING"
           }
         ]
   auth: inherit

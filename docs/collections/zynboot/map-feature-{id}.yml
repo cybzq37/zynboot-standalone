@@ -5,7 +5,7 @@ info:
 
 http:
   method: DELETE
-  url: "{{baseURL}}/map/feature/332809615169425408"
+  url: "{{baseURL}}/map/feature/332804183809986560"
   body:
     type: json
     data: ""
