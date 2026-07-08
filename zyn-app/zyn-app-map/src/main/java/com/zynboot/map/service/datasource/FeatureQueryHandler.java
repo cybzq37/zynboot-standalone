@@ -46,4 +46,30 @@ public interface FeatureQueryHandler {
      * 要素总数（bbox 内）。
      */
     long countByBbox(String sourceId, String layerId, double[] bbox);
+
+    /**
+     * 带 filter + sort 的查询。
+     *
+     * @param query   筛选/排序条件，可为 null
+     * @param bbox    空间范围，可为 null
+     */
+    default List<Map<String, Object>> queryWithFilter(String sourceId, String layerId,
+                                                       FeatureQuery query, double[] bbox,
+                                                       int limit, int offset) {
+        if (bbox != null) {
+            return queryByBbox(sourceId, layerId, bbox, limit, offset);
+        }
+        return list(sourceId, layerId, limit, offset);
+    }
+
+    /**
+     * 带 filter + sort 的总数。
+     */
+    default long countWithFilter(String sourceId, String layerId,
+                                  FeatureQuery query, double[] bbox) {
+        if (bbox != null) {
+            return countByBbox(sourceId, layerId, bbox);
+        }
+        return count(sourceId, layerId);
+    }
 }

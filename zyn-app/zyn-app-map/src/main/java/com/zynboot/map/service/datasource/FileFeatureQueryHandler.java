@@ -72,4 +72,17 @@ public class FileFeatureQueryHandler implements FeatureQueryHandler {
                 String.valueOf(bbox[0]), String.valueOf(bbox[1]),
                 String.valueOf(bbox[2]), String.valueOf(bbox[3]));
     }
+
+    @Override
+    public List<Map<String, Object>> queryWithFilter(String sourceId, String layerId,
+                                                       FeatureQuery query, double[] bbox,
+                                                       int limit, int offset) {
+        return spatialMapper.findWithQuery(layerId, bbox, query, limit, offset);
+    }
+
+    @Override
+    public long countWithFilter(String sourceId, String layerId,
+                                  FeatureQuery query, double[] bbox) {
+        return spatialMapper.countWithQuery(layerId, bbox, query);
+    }
 }

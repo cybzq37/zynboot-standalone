@@ -22,7 +22,7 @@ import java.util.Map;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/map")
-@Tag(name = "要素管理", description = "管理图层要素、检索、GeoJSON 输出与聚类分析")
+@Tag(name = "图层要素管理", description = "管理图层要素、检索、GeoJSON 输出与聚类分析")
 public class LayerFeatureController {
 
     private final MapLayerFeatureService featureService;
@@ -31,8 +31,17 @@ public class LayerFeatureController {
     @Operation(summary = "查询图层要素（最多返回 1000 条）")
     public ApiResponse<FeaturePageRes> listByLayer(
             @Parameter(description = "图层 ID") @PathVariable String layerId,
-            @Parameter(description = "空间过滤框，格式 minx,miny,maxx,maxy") @RequestParam(required = false) String bbox) {
-        return ApiResponse.ok(featureService.listByLayer(layerId, bbox));
+            @Parameter(description = "空间过滤框，格式 minx,miny,maxx,maxy") @RequestParam(required = false) String bbox,
+            @Parameter(description = """
+                    筛选/排序条件 JSON，格式：
+                    {"filter":[{"field":"字段名","op":"操作符","value":"值"}],"sort":[{"field":"字段名","order":"asc|desc"}]}
+                    — filter：属性筛选条件数组（AND 关系），field 必须是图层字段中 searchable=true 的字段；
+                    — sort：排序条件数组，field 必须是 sortable=true 的字段；
+                    — 支持的操作符：eq(等于), neq(不等于), like(模糊), gt(大于), gte(大于等于), lt(小于), lte(小于等于), in(多值), isnull(为空), notnull(非空)；
+                    — 示例：{"filter":[{"field":"name","op":"like","value":"天安门"},{"field":"area","op":"gte","value":100}],"sort":[{"field":"name","order":"asc"}]}
+                    """)
+            @RequestParam(required = false) String query) {
+        return ApiResponse.ok(featureService.listByLayer(layerId, bbox, query));
     }
 
     @GetMapping("/layer/{layerId}/feature/page")
@@ -40,8 +49,17 @@ public class LayerFeatureController {
     public ApiResponse<FeaturePageRes> page(
             @Parameter(description = "图层 ID") @PathVariable String layerId,
             @Parameter(description = "页码", example = "1") @RequestParam(defaultValue = "1") int pageNum,
-            @Parameter(description = "每页数量", example = "20") @RequestParam(defaultValue = "20") int pageSize) {
-        return ApiResponse.ok(featureService.page(layerId, pageNum, pageSize));
+            @Parameter(description = "每页数量", example = "20") @RequestParam(defaultValue = "20") int pageSize,
+            @Parameter(description = """
+                    筛选/排序条件 JSON，格式：
+                    {"filter":[{"field":"字段名","op":"操作符","value":"值"}],"sort":[{"field":"字段名","order":"asc|desc"}]}
+                    — filter：属性筛选条件数组（AND 关系），field 必须是图层字段中 searchable=true 的字段；
+                    — sort：排序条件数组，field 必须是 sortable=true 的字段；
+                    — 支持的操作符：eq(等于), neq(不等于), like(模糊), gt(大于), gte(大于等于), lt(小于), lte(小于等于), in(多值), isnull(为空), notnull(非空)；
+                    — 示例：{"filter":[{"field":"name","op":"like","value":"天安门"},{"field":"area","op":"gte","value":100}],"sort":[{"field":"name","order":"asc"}]}
+                    """)
+            @RequestParam(required = false) String query) {
+        return ApiResponse.ok(featureService.page(layerId, pageNum, pageSize, query));
     }
 
     @GetMapping("/layer/{layerId}/feature/geojson")

@@ -15,13 +15,12 @@ public class LayerAggregate {
         return new LayerAggregate(entity);
     }
 
-    public static LayerAggregate create(String groupId, String name, String type, Integer targetSrid, String geometryType) {
+    public static LayerAggregate create(String groupId, String name, String type, String geometryType) {
         MapLayer layer = new MapLayer();
         layer.setId(IdUtils.uuid());
         layer.setGroupId(groupId);
         layer.setName(name);
         layer.setType(type);
-        layer.setTargetSrid(targetSrid);
         layer.setGeometryType(geometryType);
         layer.setFeatureCount(0);
         layer.setSourceCount(0);
@@ -41,7 +40,6 @@ public class LayerAggregate {
     public String getId() { return entity.getId(); }
     public String getName() { return entity.getName(); }
     public String getType() { return entity.getType(); }
-    public Integer getTargetSrid() { return entity.getTargetSrid(); }
     public String getGeometryType() { return entity.getGeometryType(); }
     public Integer getFeatureCount() { return entity.getFeatureCount(); }
     public Integer getSourceCount() { return entity.getSourceCount(); }
@@ -60,10 +58,9 @@ public class LayerAggregate {
         if (opacity != null) entity.setOpacity(opacity);
     }
 
-    public void updateStructure(String groupId, String type, Integer targetSrid, String geometryType) {
+    public void updateStructure(String groupId, String type, String geometryType) {
         if (groupId != null) entity.setGroupId(groupId);
         if (type != null) entity.setType(type);
-        if (targetSrid != null) entity.setTargetSrid(targetSrid);
         if (geometryType != null) entity.setGeometryType(geometryType);
     }
 

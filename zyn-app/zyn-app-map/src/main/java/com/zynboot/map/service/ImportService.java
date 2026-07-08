@@ -64,7 +64,7 @@ public class ImportService {
         SourceAggregate source = SourceAggregate.create(layerId,
                 sourceName != null ? sourceName : originalName, "LOCAL", format);
         source.getEntity().setSourceSrid(parseSrid(sourceSrid));
-        source.getEntity().setTargetSrid(layer.getTargetSrid());
+        source.getEntity().setTargetSrid(4326);
         source.getEntity().setStorageKey(uploaded.getKey());
         sourceRepository.save(source);
 
@@ -120,7 +120,7 @@ public class ImportService {
 
         SourceAggregate source = SourceAggregate.create(layerId, sourceName, "FILE", "GEOTIFF");
         source.getEntity().setSourceSrid(parseSrid(sourceSrid));
-        source.getEntity().setTargetSrid(layer.getTargetSrid());
+        source.getEntity().setTargetSrid(4326);
         source.getEntity().setStorageKey(uploaded.getKey());
         source.markCompleted(0);
         sourceRepository.save(source);
@@ -151,7 +151,7 @@ public class ImportService {
 
         SourceAggregate source = SourceAggregate.create(layerId, sourceName, "FILE", "GEOTIFF");
         source.getEntity().setSourceSrid(parseSrid(sourceSrid));
-        source.getEntity().setTargetSrid(layer.getTargetSrid());
+        source.getEntity().setTargetSrid(4326);
         source.getEntity().setStorageKey(filePath);
         source.markCompleted(0);
         sourceRepository.save(source);
@@ -181,7 +181,7 @@ public class ImportService {
 
         SourceAggregate source = SourceAggregate.create(layerId, sourceName, "POSTGIS", null);
         source.getEntity().setSourceSrid(parseSrid(sourceSrid));
-        source.getEntity().setTargetSrid(layer.getTargetSrid());
+        source.getEntity().setTargetSrid(4326);
         source.getEntity().setDataSourceId(dataSourceId);
         source.getEntity().setExternalSchema(externalSchema);
         source.getEntity().setExternalTable(externalTable);
@@ -208,7 +208,7 @@ public class ImportService {
 
         SourceAggregate source = SourceAggregate.create(layerId, sourceName, "ELASTICSEARCH", null);
         source.getEntity().setSourceSrid(parseSrid(sourceSrid));
-        source.getEntity().setTargetSrid(layer.getTargetSrid());
+        source.getEntity().setTargetSrid(4326);
         source.getEntity().setDataSourceId(dataSourceId);
         source.getEntity().setExternalTable(indexName);        // ES 索引名
         source.getEntity().setExternalGeomCol(geomField != null ? geomField : "location");

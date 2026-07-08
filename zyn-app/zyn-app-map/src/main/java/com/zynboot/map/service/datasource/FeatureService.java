@@ -58,6 +58,18 @@ public class FeatureService {
                 total);
     }
 
+    public FeatureQueryResult queryWithFilter(String layerId, String sourceId,
+                                               FeatureQuery query, double[] bbox,
+                                               int limit, int offset) {
+        ResolvedSource resolved = resolveSource(layerId, sourceId, Operation.LIST);
+        FeatureQueryHandler handler = requireHandler(resolved.source().getType());
+        return new FeatureQueryResult(
+                resolved.source().getId(),
+                resolved.source().getType(),
+                handler.queryWithFilter(resolved.source().getId(), layerId, query, bbox, limit, offset),
+                handler.countWithFilter(resolved.source().getId(), layerId, query, bbox));
+    }
+
     public long count(String layerId, String sourceId) {
         ResolvedSource resolved = resolveSource(layerId, sourceId, Operation.LIST);
         return requireHandler(resolved.source().getType()).count(resolved.source().getId(), layerId);

@@ -16,7 +16,6 @@ public class LayerQueryHandler {
                 .name(e.getName())
                 .description(e.getDescription())
                 .type(e.getType())
-                .targetSrid(e.getTargetSrid())
                 .geometryType(e.getGeometryType())
                 .featureCount(e.getFeatureCount())
                 .sourceCount(e.getSourceCount())

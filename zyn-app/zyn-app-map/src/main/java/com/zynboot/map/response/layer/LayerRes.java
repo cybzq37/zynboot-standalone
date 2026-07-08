@@ -18,7 +18,6 @@ public class LayerRes {
     String name;
     String description;
     String type;
-    Integer targetSrid;
     String geometryType;
     Integer featureCount;
     Integer sourceCount;
