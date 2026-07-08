@@ -20,29 +20,30 @@ public interface MapLayerFeatureMapper extends BaseMapper<MapLayerFeature> {
 
     /**
      * 带 PostGIS 几何写入的插入。
-     * 使用 ST_GeomFromGeoJSON 解析 GeoJSON，再 ST_Transform 到目标 SRID。
+     * GeoJSON 规范为 WGS84（4326），用 ST_GeogFromGeoJSON 直接转为 geography 类型。
+     * center 字段由 ST_Centroid 计算（geography 版本返回 geography Point）。
      */
-    @Insert("INSERT INTO map_layer_feature (id, layer_id, source_id, properties, geometry) " +
+    @Insert("INSERT INTO map_layer_feature (id, layer_id, source_id, properties, geometry, center) " +
             "VALUES (#{id}, #{layerId}, #{sourceId}, #{properties}::jsonb, " +
-            "ST_Transform(ST_GeomFromGeoJSON(#{geometryGeoJson}), CAST(#{targetSrid} AS INTEGER)))")
+            "ST_GeogFromGeoJSON(#{geometryGeoJson}), " +
+            "ST_Centroid(ST_GeogFromGeoJSON(#{geometryGeoJson})))")
     void insertWithGeometry(@Param("id") long id,
                             @Param("layerId") String layerId,
                             @Param("sourceId") String sourceId,
                             @Param("properties") String propertiesJson,
-                            @Param("geometryGeoJson") String geometryGeoJson,
-                            @Param("targetSrid") String targetSrid);
+                            @Param("geometryGeoJson") String geometryGeoJson);
 
     @Update("UPDATE map_layer_feature SET source_id = #{sourceId}, properties = #{properties}::jsonb, " +
-            "geometry = ST_Transform(ST_GeomFromGeoJSON(#{geometryGeoJson}), CAST(#{targetSrid} AS INTEGER)) " +
+            "geometry = ST_GeogFromGeoJSON(#{geometryGeoJson}), " +
+            "center = ST_Centroid(ST_GeogFromGeoJSON(#{geometryGeoJson})) " +
             "WHERE id = #{id}")
     int updateWithGeometry(@Param("id") long id,
                            @Param("sourceId") String sourceId,
                            @Param("properties") String propertiesJson,
-                           @Param("geometryGeoJson") String geometryGeoJson,
-                           @Param("targetSrid") String targetSrid);
+                           @Param("geometryGeoJson") String geometryGeoJson);
 
-    @Select("SELECT id, layer_id, source_id, properties::text AS properties, ST_AsGeoJSON(geometry) AS geometry " +
-            "FROM map_layer_feature WHERE id = #{id}")
+    @Select("SELECT id, layer_id, source_id, properties::text AS properties, ST_AsGeoJSON(geometry) AS geometry, " +
+            "ST_AsGeoJSON(center) AS center FROM map_layer_feature WHERE id = #{id}")
     MapLayerFeature selectViewById(@Param("id") long id);
 
     @Delete("DELETE FROM map_layer_feature WHERE id = #{id}")

@@ -18,4 +18,5 @@ public class MapLayerFeature implements Serializable {
     private String sourceId;
     private String properties;
     private String geometry;
+    private String center;
 }

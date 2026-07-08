@@ -1,5 +1,5 @@
 info:
-  name: /map/layer/layer_lbs_aoi/feature
+  name: /map/layer/{layer_id}/feature
   type: http
   seq: 4
 

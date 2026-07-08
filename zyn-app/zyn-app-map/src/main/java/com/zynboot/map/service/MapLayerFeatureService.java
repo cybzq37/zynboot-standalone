@@ -125,8 +125,7 @@ public class MapLayerFeatureService {
                 layerId,
                 source == null ? null : source.getId(),
                 JsonUtils.toJson(properties),
-                JsonUtils.toJson(cmd.getGeometry()),
-                String.valueOf(layer.getTargetSrid()));
+                JsonUtils.toJson(cmd.getGeometry()));
         layer.incrementFeatureCount(1);
         layerRepository.update(layer);
         layerCacheVersionService.bumpVersion(layerId);
@@ -329,6 +328,7 @@ public class MapLayerFeatureService {
                 .sourceId(feature.getSourceId())
                 .properties(feature.getProperties())
                 .geometry(feature.getGeometry())
+                .center(feature.getCenter())
                 .build();
     }
 }
