@@ -1,0 +1,18 @@
+info:
+  name: /map/feature/{id}
+  type: http
+  seq: 5
+
+http:
+  method: DELETE
+  url: "{{baseURL}}/map/feature/332809615169425408"
+  body:
+    type: json
+    data: ""
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

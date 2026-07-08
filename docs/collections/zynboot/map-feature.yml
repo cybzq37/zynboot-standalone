@@ -1,11 +1,11 @@
 info:
-  name: /map/layer/{layerId}/feature
+  name: /map/feature
   type: http
-  seq: 2
+  seq: 3
 
 http:
-  method: POST
-  url: "{{baseURL}}/map/layer/layer-jitu/feature"
+  method: PUT
+  url: "{{baseURL}}/map/feature/332809615169425408"
   body:
     type: json
     data: |-
