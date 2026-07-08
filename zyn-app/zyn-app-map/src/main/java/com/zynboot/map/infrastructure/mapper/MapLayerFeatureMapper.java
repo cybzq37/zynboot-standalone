@@ -20,13 +20,13 @@ public interface MapLayerFeatureMapper extends BaseMapper<MapLayerFeature> {
 
     /**
      * 带 PostGIS 几何写入的插入。
-     * GeoJSON 规范为 WGS84（4326），用 ST_GeogFromGeoJSON 直接转为 geography 类型。
+     * GeoJSON 规范为 WGS84（4326），用 ST_GeomFromGeoJSON 解析后 ::geography 转为 geography 类型。
      * center 字段由 ST_Centroid 计算（geography 版本返回 geography Point）。
      */
     @Insert("INSERT INTO map_layer_feature (id, layer_id, source_id, properties, geometry, center) " +
             "VALUES (#{id}, #{layerId}, #{sourceId}, #{properties}::jsonb, " +
-            "ST_GeogFromGeoJSON(#{geometryGeoJson}), " +
-            "ST_Centroid(ST_GeogFromGeoJSON(#{geometryGeoJson})))")
+            "ST_GeomFromGeoJSON(#{geometryGeoJson}::text)::geography, " +
+            "ST_Centroid(ST_GeomFromGeoJSON(#{geometryGeoJson}::text)::geography))")
     void insertWithGeometry(@Param("id") long id,
                             @Param("layerId") String layerId,
                             @Param("sourceId") String sourceId,
@@ -34,8 +34,8 @@ public interface MapLayerFeatureMapper extends BaseMapper<MapLayerFeature> {
                             @Param("geometryGeoJson") String geometryGeoJson);
 
     @Update("UPDATE map_layer_feature SET source_id = #{sourceId}, properties = #{properties}::jsonb, " +
-            "geometry = ST_GeogFromGeoJSON(#{geometryGeoJson}), " +
-            "center = ST_Centroid(ST_GeogFromGeoJSON(#{geometryGeoJson})) " +
+            "geometry = ST_GeomFromGeoJSON(#{geometryGeoJson}::text)::geography, " +
+            "center = ST_Centroid(ST_GeomFromGeoJSON(#{geometryGeoJson}::text)::geography) " +
             "WHERE id = #{id}")
     int updateWithGeometry(@Param("id") long id,
                            @Param("sourceId") String sourceId,

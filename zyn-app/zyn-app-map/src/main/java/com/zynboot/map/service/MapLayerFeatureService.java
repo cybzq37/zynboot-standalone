@@ -148,8 +148,7 @@ public class MapLayerFeatureService {
                 id,
                 existing.getSourceId(),
                 JsonUtils.toJson(cmd.getProperties()),
-                JsonUtils.toJson(cmd.getGeometry()),
-                String.valueOf(layer.getTargetSrid()));
+                JsonUtils.toJson(cmd.getGeometry()));
         layerCacheVersionService.bumpVersion(existing.getLayerId());
         return getById(id);
     }
