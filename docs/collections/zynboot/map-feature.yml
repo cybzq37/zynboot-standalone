@@ -5,7 +5,7 @@ info:
 
 http:
   method: PUT
-  url: "{{baseURL}}/map/feature/332809615169425408"
+  url: "{{baseURL}}/map/feature/333088106020474880"
   body:
     type: json
     data: |-
