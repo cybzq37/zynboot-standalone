@@ -11,4 +11,5 @@ public class FeatureRes {
     String sourceId;
     String properties;
     String geometry;
+    String center;
 }

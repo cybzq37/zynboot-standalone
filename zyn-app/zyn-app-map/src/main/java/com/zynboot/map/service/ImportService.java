@@ -70,14 +70,11 @@ public class ImportService {
 
         int imported = 0;
         List<String> errors = new ArrayList<>();
-        Integer targetSrid = layer.getTargetSrid();
-        String sridStr = targetSrid != null ? String.valueOf(targetSrid) : "4326";
 
         for (int i = 0; i < features.size(); i++) {
             VectorImporter.FeatureRecord rec = features.get(i);
             try {
-                // 使用 PostGIS 函数写入几何：ST_GeomFromGeoJSON + ST_Transform
-                // 先验证几何有效性
+                // 使用 PostGIS 函数写入几何：ST_GeogFromGeoJSON（统一存 geography/4326）
                 String geomJson = rec.geometryGeoJson();
                 String propsJson = rec.propertiesJson();
 
@@ -87,8 +84,7 @@ public class ImportService {
                         layerId,
                         source.getId(),
                         propsJson,
-                        geomJson,
-                        sridStr
+                        geomJson
                 );
                 imported++;
             } catch (Exception e) {

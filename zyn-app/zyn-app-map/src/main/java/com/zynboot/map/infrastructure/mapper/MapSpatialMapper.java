@@ -11,15 +11,15 @@ import java.util.Map;
 @Mapper
 public interface MapSpatialMapper {
 
-    // ── 空间分析 ───────────────────────────────────────────
+    // ── 空间分析（geography 类型，距离/面积/缓冲区单位为米） ─────
 
-    @Select("SELECT ST_AsGeoJSON(ST_Buffer(geometry::geography, #{distanceMeters})::geometry) FROM map_layer_feature WHERE id = CAST(#{featureId} AS BIGINT)")
+    @Select("SELECT ST_AsGeoJSON(ST_Buffer(geometry, #{distanceMeters})::geometry) FROM map_layer_feature WHERE id = CAST(#{featureId} AS BIGINT)")
     String buffer(@Param("featureId") String featureId, @Param("distanceMeters") double distanceMeters);
 
-    @Select("SELECT ST_Distance(a.geometry::geography, b.geometry::geography) FROM map_layer_feature a, map_layer_feature b WHERE a.id = CAST(#{id1} AS BIGINT) AND b.id = CAST(#{id2} AS BIGINT)")
+    @Select("SELECT ST_Distance(a.geometry, b.geometry) FROM map_layer_feature a, map_layer_feature b WHERE a.id = CAST(#{id1} AS BIGINT) AND b.id = CAST(#{id2} AS BIGINT)")
     double distance(@Param("id1") String featureId1, @Param("id2") String featureId2);
 
-    @Select("SELECT ST_Area(geometry::geography) FROM map_layer_feature WHERE id = CAST(#{featureId} AS BIGINT)")
+    @Select("SELECT ST_Area(geometry) FROM map_layer_feature WHERE id = CAST(#{featureId} AS BIGINT)")
     double area(@Param("featureId") String featureId);
 
     @Select("SELECT ST_Intersects(a.geometry, b.geometry) FROM map_layer_feature a, map_layer_feature b WHERE a.id = CAST(#{id1} AS BIGINT) AND b.id = CAST(#{id2} AS BIGINT)")
@@ -28,9 +28,9 @@ public interface MapSpatialMapper {
     @Select("SELECT f.id, f.properties, ST_AsGeoJSON(f.geometry) as geometry FROM map_layer_feature f WHERE f.layer_id = #{layerId1} AND EXISTS (SELECT 1 FROM map_layer_feature g WHERE g.layer_id = #{layerId2} AND ST_Intersects(f.geometry, g.geometry))")
     List<Map<String, Object>> intersection(@Param("layerId1") String layerId1, @Param("layerId2") String layerId2);
 
-    // ── 空间查询 ───────────────────────────────────────────
+    // ── 空间查询（geography 列与 geometry envelope 比较需转 geometry） ──
 
-    @Select("SELECT * FROM map_layer_feature WHERE layer_id = #{layerId} AND geometry && ST_MakeEnvelope(CAST(#{minX} AS DOUBLE PRECISION), CAST(#{minY} AS DOUBLE PRECISION), CAST(#{maxX} AS DOUBLE PRECISION), CAST(#{maxY} AS DOUBLE PRECISION), 4326) LIMIT #{limit} OFFSET #{offset}")
+    @Select("SELECT * FROM map_layer_feature WHERE layer_id = #{layerId} AND geometry::geometry && ST_MakeEnvelope(CAST(#{minX} AS DOUBLE PRECISION), CAST(#{minY} AS DOUBLE PRECISION), CAST(#{maxX} AS DOUBLE PRECISION), CAST(#{maxY} AS DOUBLE PRECISION), 4326) LIMIT #{limit} OFFSET #{offset}")
     List<MapLayerFeature> findByBbox(@Param("layerId") String layerId, @Param("minX") String minX, @Param("minY") String minY, @Param("maxX") String maxX, @Param("maxY") String maxY, @Param("limit") int limit, @Param("offset") int offset);
 
     @Select("SELECT id, layer_id, source_id, properties, ST_AsGeoJSON(geometry) as geometry FROM map_layer_feature WHERE layer_id = #{layerId} LIMIT #{limit} OFFSET #{offset}")
@@ -45,7 +45,7 @@ public interface MapSpatialMapper {
 
     @Select("SELECT id, layer_id, source_id, properties, ST_AsGeoJSON(geometry) as geometry " +
             "FROM map_layer_feature WHERE layer_id = #{layerId} " +
-            "AND geometry && ST_MakeEnvelope(CAST(#{minX} AS DOUBLE PRECISION), CAST(#{minY} AS DOUBLE PRECISION), CAST(#{maxX} AS DOUBLE PRECISION), CAST(#{maxY} AS DOUBLE PRECISION), 4326) " +
+            "AND geometry::geometry && ST_MakeEnvelope(CAST(#{minX} AS DOUBLE PRECISION), CAST(#{minY} AS DOUBLE PRECISION), CAST(#{maxX} AS DOUBLE PRECISION), CAST(#{maxY} AS DOUBLE PRECISION), 4326) " +
             "LIMIT #{limit} OFFSET #{offset}")
     List<Map<String, Object>> findAsGeoJsonByBbox(@Param("layerId") String layerId,
                                                   @Param("minX") String minX,
@@ -57,7 +57,7 @@ public interface MapSpatialMapper {
 
     @Select("SELECT id, layer_id, source_id, properties, ST_AsGeoJSON(geometry) as geometry " +
             "FROM map_layer_feature WHERE layer_id = #{layerId} AND source_id = #{sourceId} " +
-            "AND geometry && ST_MakeEnvelope(CAST(#{minX} AS DOUBLE PRECISION), CAST(#{minY} AS DOUBLE PRECISION), CAST(#{maxX} AS DOUBLE PRECISION), CAST(#{maxY} AS DOUBLE PRECISION), 4326) " +
+            "AND geometry::geometry && ST_MakeEnvelope(CAST(#{minX} AS DOUBLE PRECISION), CAST(#{minY} AS DOUBLE PRECISION), CAST(#{maxX} AS DOUBLE PRECISION), CAST(#{maxY} AS DOUBLE PRECISION), 4326) " +
             "LIMIT #{limit} OFFSET #{offset}")
     List<Map<String, Object>> findAsGeoJsonBySourceAndBbox(@Param("layerId") String layerId,
                                                            @Param("sourceId") String sourceId,
@@ -69,7 +69,7 @@ public interface MapSpatialMapper {
                                                            @Param("offset") int offset);
 
     @Select("SELECT count(*) FROM map_layer_feature WHERE layer_id = #{layerId} " +
-            "AND geometry && ST_MakeEnvelope(CAST(#{minX} AS DOUBLE PRECISION), CAST(#{minY} AS DOUBLE PRECISION), CAST(#{maxX} AS DOUBLE PRECISION), CAST(#{maxY} AS DOUBLE PRECISION), 4326)")
+            "AND geometry::geometry && ST_MakeEnvelope(CAST(#{minX} AS DOUBLE PRECISION), CAST(#{minY} AS DOUBLE PRECISION), CAST(#{maxX} AS DOUBLE PRECISION), CAST(#{maxY} AS DOUBLE PRECISION), 4326)")
     long countByLayerAndBbox(@Param("layerId") String layerId,
                              @Param("minX") String minX,
                              @Param("minY") String minY,
@@ -77,7 +77,7 @@ public interface MapSpatialMapper {
                              @Param("maxY") String maxY);
 
     @Select("SELECT count(*) FROM map_layer_feature WHERE layer_id = #{layerId} AND source_id = #{sourceId} " +
-            "AND geometry && ST_MakeEnvelope(CAST(#{minX} AS DOUBLE PRECISION), CAST(#{minY} AS DOUBLE PRECISION), CAST(#{maxX} AS DOUBLE PRECISION), CAST(#{maxY} AS DOUBLE PRECISION), 4326)")
+            "AND geometry::geometry && ST_MakeEnvelope(CAST(#{minX} AS DOUBLE PRECISION), CAST(#{minY} AS DOUBLE PRECISION), CAST(#{maxX} AS DOUBLE PRECISION), CAST(#{maxY} AS DOUBLE PRECISION), 4326)")
     long countByLayerSourceAndBbox(@Param("layerId") String layerId,
                                    @Param("sourceId") String sourceId,
                                    @Param("minX") String minX,
@@ -85,12 +85,12 @@ public interface MapSpatialMapper {
                                    @Param("maxX") String maxX,
                                    @Param("maxY") String maxY);
 
-    // ── 要素聚类 ───────────────────────────────────────────
+    // ── 要素聚类（ST_ClusterKMeans 不支持 geography，需转 geometry） ──
 
-    @Select("SELECT ST_AsGeoJSON(ST_Centroid(ST_Collect(geometry))) as center, COUNT(*) as count FROM (SELECT geometry, ST_ClusterKMeans(geometry, #{k}) OVER () AS cluster_id FROM map_layer_feature WHERE layer_id = #{layerId}) t GROUP BY cluster_id")
+    @Select("SELECT ST_AsGeoJSON(ST_Centroid(ST_Collect(geometry::geometry))) as center, COUNT(*) as count FROM (SELECT geometry, ST_ClusterKMeans(geometry::geometry, #{k}) OVER () AS cluster_id FROM map_layer_feature WHERE layer_id = #{layerId}) t GROUP BY cluster_id")
     List<Map<String, Object>> cluster(@Param("layerId") String layerId, @Param("k") int k);
 
-    @Select("SELECT ST_AsGeoJSON(ST_Centroid(ST_Collect(geometry))) as center, COUNT(*) as count FROM (SELECT geometry, ST_ClusterKMeans(geometry, #{k}) OVER () AS cluster_id FROM map_layer_feature WHERE layer_id = #{layerId} AND geometry && ST_MakeEnvelope(CAST(#{minX} AS DOUBLE PRECISION), CAST(#{minY} AS DOUBLE PRECISION), CAST(#{maxX} AS DOUBLE PRECISION), CAST(#{maxY} AS DOUBLE PRECISION), 4326)) t GROUP BY cluster_id")
+    @Select("SELECT ST_AsGeoJSON(ST_Centroid(ST_Collect(geometry::geometry))) as center, COUNT(*) as count FROM (SELECT geometry, ST_ClusterKMeans(geometry::geometry, #{k}) OVER () AS cluster_id FROM map_layer_feature WHERE layer_id = #{layerId} AND geometry::geometry && ST_MakeEnvelope(CAST(#{minX} AS DOUBLE PRECISION), CAST(#{minY} AS DOUBLE PRECISION), CAST(#{maxX} AS DOUBLE PRECISION), CAST(#{maxY} AS DOUBLE PRECISION), 4326)) t GROUP BY cluster_id")
     List<Map<String, Object>> clusterWithBbox(@Param("layerId") String layerId, @Param("k") int k, @Param("minX") String minX, @Param("minY") String minY, @Param("maxX") String maxX, @Param("maxY") String maxY);
 
     // ── BM25 全文搜索 ──────────────────────────────────────

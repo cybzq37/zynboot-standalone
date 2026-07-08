@@ -303,7 +303,8 @@ CREATE TABLE map_layer_feature (
     layer_id          VARCHAR(64)  NOT NULL,           -- 分区键
     source_id         VARCHAR(64),                     -- 数据源 ID；手动新增要素时为 NULL
     properties        JSONB,                           -- 属性键值对
-    geometry          GEOMETRY     NOT NULL,           -- PostGIS 几何（统一为 target_srid）
+    geometry          GEOGRAPHY(Geometry, 4326) NOT NULL,  -- PostGIS 地理类型（WGS84/4326，支持米制空间分析）
+    center            GEOGRAPHY(Point, 4326),              -- 几何中心点（ST_Centroid 计算）
     PRIMARY KEY (id, layer_id)
 ) PARTITION BY HASH (layer_id);
 
@@ -323,7 +324,8 @@ CREATE INDEX idx_layer_feature_props_gin ON map_layer_feature USING GIN (propert
 
 COMMENT ON TABLE map_layer_feature IS '图层矢量要素（千万级，哈希分区）';
 COMMENT ON COLUMN map_layer_feature.id IS 'Snowflake ID（BIGINT，8 字节，大致有序）';
-COMMENT ON COLUMN map_layer_feature.geometry IS 'PostGIS 几何，SRID = 所属图层 target_srid';
+COMMENT ON COLUMN map_layer_feature.geometry IS 'PostGIS geography 类型（WGS84/4326），支持米制空间分析（ST_DWithin/ST_Distance/ST_Area 等）';
+COMMENT ON COLUMN map_layer_feature.center IS '几何中心点（geography Point, 4326），由 ST_Centroid 计算，新增/修改 geometry 时自动维护';
 
 -- ============================================================
 -- 12. 图层版本
