@@ -1,7 +1,9 @@
 package com.zynboot.map.controller;
 
 import com.zynboot.kit.response.ApiResponse;
+import com.zynboot.map.command.feature.FeatureMergeCmd;
 import com.zynboot.map.command.feature.FeatureSaveCmd;
+import com.zynboot.map.command.feature.FeatureSplitCmd;
 import com.zynboot.map.response.feature.FeaturePageRes;
 import com.zynboot.map.response.feature.FeatureRes;
 import com.zynboot.map.service.MapLayerFeatureService;
@@ -110,5 +112,23 @@ public class LayerFeatureController {
     public ApiResponse<Void> delete(@Parameter(description = "要素 ID") @PathVariable Long id) {
         featureService.delete(id);
         return ApiResponse.ok(null);
+    }
+
+    @PostMapping("/layer/{layerId}/feature/split")
+    @Operation(summary = "拆分要素：删除源要素，创建多个新要素（原子事务）")
+    public ApiResponse<List<FeatureRes>> split(
+            @Parameter(description = "图层 ID") @PathVariable String layerId,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "要素拆分参数", required = true)
+            @Valid @RequestBody FeatureSplitCmd cmd) {
+        return ApiResponse.ok(featureService.split(layerId, cmd));
+    }
+
+    @PostMapping("/layer/{layerId}/feature/merge")
+    @Operation(summary = "合并要素：删除多个源要素，创建一个新要素（原子事务）")
+    public ApiResponse<FeatureRes> merge(
+            @Parameter(description = "图层 ID") @PathVariable String layerId,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "要素合并参数", required = true)
+            @Valid @RequestBody FeatureMergeCmd cmd) {
+        return ApiResponse.ok(featureService.merge(layerId, cmd));
     }
 }

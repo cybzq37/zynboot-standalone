@@ -175,6 +175,18 @@ public interface MapSpatialMapper {
                                              @Param("limit") int limit,
                                              @Param("offset") int offset);
 
+    // ── 几何合并（ST_Union，用于要素合并兜底计算） ──────────────
+
+    @Select({
+        "<script>",
+        "SELECT ST_AsGeoJSON(ST_Union(geometry::geometry)) AS geometry",
+        "FROM map_layer_feature",
+        "WHERE layer_id = #{layerId} AND id IN",
+        "<foreach collection='originIds' item='id' open='(' separator=',' close=')'>#{id}</foreach>",
+        "</script>"
+    })
+    String unionGeometry(@Param("layerId") String layerId, @Param("originIds") List<Long> originIds);
+
     @Select({
         "<script>",
         "SELECT COUNT(*) FROM map_layer_feature",
