@@ -5,10 +5,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.HttpExchange;
 
-@ExchangeClient("jitu-geo-provider")
+@ExchangeClient("jitugeoprovider")
 @HttpExchange
 public interface UpstreamGeoClient {
 
     @GetExchange("/service/lbs/search/v1/geo")
-    UpstreamGeoResponse geocode(@RequestParam("address") String address);
+    UpstreamGeoResponse geocode(@RequestParam("key") String key,
+                                @RequestParam("address") String address);
 }

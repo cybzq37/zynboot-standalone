@@ -7,6 +7,7 @@ import com.zynboot.jitu.integration.geo.UpstreamGeoClient;
 import com.zynboot.jitu.integration.geo.UpstreamGeoResponse;
 import com.zynboot.kit.exception.BizException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 import org.springframework.util.StringUtils;
@@ -14,6 +15,7 @@ import org.springframework.util.StringUtils;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GeocodeService {
@@ -31,7 +33,7 @@ public class GeocodeService {
             return cached;
         }
 
-        UpstreamGeoResponse response = upstreamGeoClient.geocode(normalizedAddress);
+        UpstreamGeoResponse response = upstreamGeoClient.geocode(properties.getApiKey(), normalizedAddress);
         if (response == null) {
             throw BizException.badRequest("地址解析失败，未返回有效结果");
         }
@@ -62,6 +64,7 @@ public class GeocodeService {
         } catch (NumberFormatException ex) {
             throw BizException.badRequest("地址解析失败，坐标值不合法");
         }
+        log.info("Geocode result: address='{}' -> lng={}, lat={}", normalizedAddress, value.getLng(), value.getLat());
         writeCache(cacheKey, value);
         return value;
     }

@@ -12,22 +12,16 @@ spring:
     import:
       - classpath:zyn-conf-common.yml
       - classpath:zyn-conf-@spring.profiles.active@.yml
-  sql:
-    init:
-      mode: never
-      schema-locations: classpath:sql/lbs_aoi.sql
 
 zyn:
   exchange:
     services:
-      jitu-geo-provider: ${JITU_GEO_PROVIDER_URL:http://localhost:8080}
+      jitugeoprovider: https://map-api.minedata.cn
 
 jitu:
   geo:
-    geocode-cache-ttl: 6h
-    result-cache-ttl: 30m
+    geocode-cache-ttl: 1h
+    result-cache-ttl: 5m
     code-property: code
-    aoi-id-property: aoi_id
-    layer-mappings:
-      "1": ${JITU_PICKUP_LAYER_ID:}
-      "2": ${JITU_DELIVERY_LAYER_ID:}
+    layer-id: ${JITU_FENCE_LAYER_ID:layer-jitu}
+    api-key: ${JITU_GEO_API_KEY:6b31b6fdc3d5497aaf1dcefb487aa74e}
