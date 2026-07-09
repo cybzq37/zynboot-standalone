@@ -1,6 +1,9 @@
 package com.zynboot.infra.exchange;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -30,6 +33,14 @@ public final class ServiceProxyBuilder {
                               long connectTimeoutMs, long readTimeoutMs,
                               boolean followRedirects, boolean forwardAuth,
                               List<HttpServiceArgumentResolver> argumentResolvers) {
+        return build(serviceType, baseUrl, connectTimeoutMs, readTimeoutMs, followRedirects, forwardAuth, argumentResolvers, null);
+    }
+
+    public static <T> T build(Class<T> serviceType, String baseUrl,
+                              long connectTimeoutMs, long readTimeoutMs,
+                              boolean followRedirects, boolean forwardAuth,
+                              List<HttpServiceArgumentResolver> argumentResolvers,
+                              ObjectMapper objectMapper) {
         HttpClient httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofMillis(connectTimeoutMs))
                 .followRedirects(followRedirects
@@ -54,6 +65,18 @@ public final class ServiceProxyBuilder {
                     }
                 }
                 return execution.execute(request, body);
+            });
+        }
+
+        // 某些上游 API 返回 JSON 内容但 Content-Type 为 text/plain，需要扩展 Jackson 转换器的支持类型。
+        if (objectMapper != null) {
+            MappingJackson2HttpMessageConverter jacksonConverter = new MappingJackson2HttpMessageConverter(objectMapper);
+            List<MediaType> supportedTypes = new java.util.ArrayList<>(jacksonConverter.getSupportedMediaTypes());
+            supportedTypes.add(MediaType.TEXT_PLAIN);
+            jacksonConverter.setSupportedMediaTypes(supportedTypes);
+            clientBuilder.messageConverters(converters -> {
+                converters.removeIf(c -> c instanceof MappingJackson2HttpMessageConverter);
+                converters.add(jacksonConverter);
             });
         }
 

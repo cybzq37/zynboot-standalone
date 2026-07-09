@@ -10,8 +10,11 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProce
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
+import org.springframework.core.env.Environment;
 import org.springframework.core.type.filter.AnnotationTypeFilter;
+import org.springframework.util.StringUtils;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -43,11 +46,16 @@ public class ExchangeClientRegistrar implements BeanDefinitionRegistryPostProces
                 };
         scanner.addIncludeFilter(new AnnotationTypeFilter(ExchangeClient.class));
 
-        ExchangeProperties props = applicationContext.getBean(ExchangeProperties.class);
-        List<String> basePackages = props.getScanBasePackages();
-        if (basePackages == null || basePackages.isEmpty()) {
-            basePackages = List.of("com.zynboot");
-        }
+        // 从 Environment 读取扫描包配置（简单字符串，Environment 可直接读取）
+        // 注意：不能调用 getBean(ExchangeProperties.class)，否则 ExchangeProperties 会在此阶段提前实例化，
+        // 此时 ConfigurationPropertiesBindingPostProcessor 尚未注册，services Map 不会被绑定。
+        // services 配置由 ExchangeClientFactoryBean.afterPropertiesSet 在 Bean 初始化阶段读取（此时已绑定）。
+        Environment env = applicationContext.getEnvironment();
+        String scanPackages = env.getProperty("zyn.exchange.scan-base-packages", "com.zynboot");
+        List<String> basePackages = Arrays.stream(scanPackages.split(","))
+                .map(String::trim)
+                .filter(StringUtils::hasText)
+                .toList();
 
         for (String basePackage : basePackages) {
             Set<BeanDefinition> candidates = scanner.findCandidateComponents(basePackage);
