@@ -1,7 +1,7 @@
 package com.zynboot.infra.exchange;
 
 import com.zynboot.infra.exchange.query.HttpQueryArgumentResolver;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zynboot.kit.util.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
@@ -22,7 +22,6 @@ public class ExchangeClientFactoryBean implements FactoryBean<Object>, Initializ
     private final Class<?> clientType;
     private final String serviceName;
     private ExchangeProperties properties;
-    private ObjectMapper objectMapper;
 
     private Object proxy;
 
@@ -33,10 +32,6 @@ public class ExchangeClientFactoryBean implements FactoryBean<Object>, Initializ
 
     public void setProperties(ExchangeProperties properties) {
         this.properties = properties;
-    }
-
-    public void setObjectMapper(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -53,8 +48,8 @@ public class ExchangeClientFactoryBean implements FactoryBean<Object>, Initializ
 
         List<HttpServiceArgumentResolver> resolvers = new ArrayList<>();
         for (HttpServiceArgumentResolver resolver : ServiceLoader.load(HttpServiceArgumentResolver.class)) {
-            if (resolver instanceof HttpQueryArgumentResolver queryResolver && objectMapper != null) {
-                queryResolver.setObjectMapper(objectMapper);
+            if (resolver instanceof HttpQueryArgumentResolver queryResolver) {
+                queryResolver.setObjectMapper(JsonUtils.mapper());
             }
             resolvers.add(resolver);
         }
@@ -63,7 +58,7 @@ public class ExchangeClientFactoryBean implements FactoryBean<Object>, Initializ
                 clientType, url,
                 properties.getConnectTimeoutMs(), properties.getReadTimeoutMs(),
                 properties.isFollowRedirects(), properties.isForwardAuth(),
-                resolvers);
+                resolvers, JsonUtils.mapper());
         log.info("Created service client: {} -> {} ({})", clientType.getSimpleName(), serviceName, url);
     }
 
