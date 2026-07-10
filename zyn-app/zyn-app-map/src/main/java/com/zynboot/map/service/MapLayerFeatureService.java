@@ -306,6 +306,7 @@ public class MapLayerFeatureService {
     /**
      * 拆分要素：删除一个源要素，创建多个新要素（原子事务）。
      * <p>每个新要素的 geometry/properties 由调用方提供，复用 create 的字段校验与几何类型校验逻辑。
+     * 源要素通过 layerId + originId 条件删除，不存在不报错（deleted==0 视为无操作）。
      */
     @Transactional
     public List<FeatureRes> split(String layerId, FeatureSplitCmd cmd) {
@@ -313,22 +314,14 @@ public class MapLayerFeatureService {
         SourceAggregate source = sourceRepository.findByLayerId(layerId).stream().findFirst().orElse(null);
         assertWritableSource(source);
 
-        MapLayerFeature origin = featureMapper.selectViewById(cmd.getOriginId());
-        if (origin == null) {
-            throw BizException.notFound("要素");
-        }
-        if (!layerId.equals(origin.getLayerId())) {
-            throw BizException.badRequest("源要素不属于该图层");
-        }
-
         // 先校验所有新要素的几何类型与字段，全部通过后再执行写操作
         for (FeatureSaveCmd target : cmd.getTargets()) {
             assertGeometryType(target.getGeometry(), layer.getGeometryType());
             applyDefaultsAndValidate(layerId, target.getProperties());
         }
 
-        // 删除源要素
-        featureMapper.deleteByIdValue(cmd.getOriginId());
+        // 删除源要素（带 layerId 条件，deleted==0 不报错）
+        featureMapper.deleteByLayerIdAndId(layerId, cmd.getOriginId());
 
         // 创建新要素
         List<FeatureRes> result = new ArrayList<>();
@@ -344,9 +337,8 @@ public class MapLayerFeatureService {
             result.add(getById(id));
         }
 
-        // 更新要素计数：-1 + N
-        int delta = cmd.getTargets().size() - 1;
-        layer.incrementFeatureCount(delta);
+        // 重新统计要素计数
+        layer.setFeatureCount((int) featureMapper.countByLayerId(layerId));
         layerRepository.update(layer);
         layerCacheVersionService.bumpVersion(layerId);
         return result;
@@ -355,23 +347,13 @@ public class MapLayerFeatureService {
     /**
      * 合并要素：删除多个源要素，创建一个新要素（原子事务）。
      * <p>目标要素的 geometry 可不传，由服务端用 ST_Union 计算源要素几何并集兜底。
+     * 源要素通过 layerId + originId 条件删除，不存在不报错（deleted==0 视为无操作）。
      */
     @Transactional
     public FeatureRes merge(String layerId, FeatureMergeCmd cmd) {
         LayerAggregate layer = requireLayer(layerId);
         SourceAggregate source = sourceRepository.findByLayerId(layerId).stream().findFirst().orElse(null);
         assertWritableSource(source);
-
-        // 校验所有源要素存在且属于该图层
-        for (Long originId : cmd.getOriginIds()) {
-            MapLayerFeature origin = featureMapper.selectViewById(originId);
-            if (origin == null) {
-                throw BizException.notFound("要素");
-            }
-            if (!layerId.equals(origin.getLayerId())) {
-                throw BizException.badRequest("源要素 " + originId + " 不属于该图层");
-            }
-        }
 
         FeatureMergeCmd.FeatureMergeTarget target = cmd.getTarget();
         JsonNode geometry = target.getGeometry();
@@ -391,9 +373,9 @@ public class MapLayerFeatureService {
         // 先校验字段，全部通过后再执行写操作
         JsonNode properties = applyDefaultsAndValidate(layerId, target.getProperties());
 
-        // 删除所有源要素
+        // 删除所有源要素（带 layerId 条件，deleted==0 不报错）
         for (Long originId : cmd.getOriginIds()) {
-            featureMapper.deleteByIdValue(originId);
+            featureMapper.deleteByLayerIdAndId(layerId, originId);
         }
 
         // 创建新要素
@@ -405,9 +387,8 @@ public class MapLayerFeatureService {
                 JsonUtils.toJson(properties),
                 JsonUtils.toJson(geometry));
 
-        // 更新要素计数：-N + 1
-        int delta = 1 - cmd.getOriginIds().size();
-        layer.incrementFeatureCount(delta);
+        // 重新统计要素计数
+        layer.setFeatureCount((int) featureMapper.countByLayerId(layerId));
         layerRepository.update(layer);
         layerCacheVersionService.bumpVersion(layerId);
         return getById(id);

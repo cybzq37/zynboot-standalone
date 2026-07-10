@@ -68,6 +68,10 @@ public class LayerAggregate {
         entity.setFeatureCount(entity.getFeatureCount() + count);
     }
 
+    public void setFeatureCount(int count) {
+        entity.setFeatureCount(count);
+    }
+
     public void incrementSourceCount() {
         entity.setSourceCount(entity.getSourceCount() + 1);
     }

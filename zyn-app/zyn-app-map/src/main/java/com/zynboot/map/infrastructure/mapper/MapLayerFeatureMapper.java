@@ -49,6 +49,9 @@ public interface MapLayerFeatureMapper extends BaseMapper<MapLayerFeature> {
     @Delete("DELETE FROM map_layer_feature WHERE id = #{id}")
     int deleteByIdValue(@Param("id") long id);
 
+    @Delete("DELETE FROM map_layer_feature WHERE id = #{id} AND layer_id = #{layerId}")
+    int deleteByLayerIdAndId(@Param("layerId") String layerId, @Param("id") long id);
+
     /**
      * 获取图层特征的 ETag（基于 MAX(id) + feature_count，用于缓存失效判断）。
      */
