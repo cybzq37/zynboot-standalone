@@ -5,7 +5,7 @@ info:
 
 http:
   method: GET
-  url: http://localhost:28083/jitu/openapi/seg4code/v1/geo/resolve?type=1&address=合肥市第七中学
+  url: http://124.193.227.33:8080/jitu/openapi/seg4code/v1/geo/resolve?type=1&address=合肥市第七中学
   params:
     - name: type
       value: "1"

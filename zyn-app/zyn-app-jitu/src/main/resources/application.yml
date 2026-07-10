@@ -1,7 +1,5 @@
 server:
   port: 28083
-  servlet:
-    context-path: /jitu
 
 spring:
   application:
