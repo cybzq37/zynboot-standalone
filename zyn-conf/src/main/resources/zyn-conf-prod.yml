@@ -2,6 +2,22 @@
 # 生产环境（Docker/K8s 内部通信）
 # ──────────────────────────────────────────────────────────────
 
+# SpringDoc（生产环境关闭）
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+# Actuator（生产环境关闭全部端点，仅保留 health 且不显示详情）
+management:
+  endpoints:
+    enabled-by-default: false
+  endpoint:
+    health:
+      enabled: true
+      show-details: never
+
 spring:
   datasource:
     dynamic:
