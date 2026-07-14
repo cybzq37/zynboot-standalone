@@ -29,7 +29,7 @@ public class ExportController {
     private final MapExportService exportService;
 
     @GetMapping("/layer/{layerId}/export")
-    @Operation(summary = "导出图层数据", description = "支持按图层导出 GeoJSON 或 CSV 文件")
+    @Operation(summary = "导出图层数据", description = "导出图层下全部要素，支持 GeoJSON 或 CSV 格式")
     @io.swagger.v3.oas.annotations.responses.ApiResponse(
             responseCode = "200",
             description = "导出文件流",
@@ -37,7 +37,6 @@ public class ExportController {
     public StreamingResponseBody export(
             @Parameter(description = "图层 ID") @PathVariable String layerId,
             @Parameter(description = "导出格式，支持 geojson、csv", example = "geojson") @RequestParam(defaultValue = "geojson") String format,
-            @Parameter(description = "来源数据源 ID，不传时导出图层下全部要素") @RequestParam(required = false) String sourceId,
             @Parameter(hidden = true) HttpServletResponse response) {
 
         MapExportService.ExportPlan plan = exportService.prepare(layerId, format);
@@ -48,7 +47,7 @@ public class ExportController {
 
         return outputStream -> {
             try {
-                exportService.write(layerId, sourceId, plan.getFormat(), outputStream);
+                exportService.write(layerId, plan.getFormat(), outputStream);
             } catch (Exception e) {
                 log.error("Export failed: layerId={}, format={}", layerId, plan.getFormat(), e);
                 outputStream.write(("{\"error\":\"" + e.getMessage() + "\"}").getBytes());

@@ -15,6 +15,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -40,15 +41,15 @@ public class MapExportService {
         };
     }
 
-    public void write(String layerId, String sourceId, String format, OutputStream outputStream) throws Exception {
+    public void write(String layerId, String format, OutputStream outputStream) throws Exception {
         switch (format) {
-            case "csv" -> exportCsv(layerId, sourceId, outputStream);
-            case "geojson" -> exportGeoJson(layerId, sourceId, outputStream);
+            case "csv" -> exportCsv(layerId, outputStream);
+            case "geojson" -> exportGeoJson(layerId, outputStream);
             default -> throw BizException.badRequest("仅支持导出 geojson 或 csv");
         }
     }
 
-    private void exportGeoJson(String layerId, String sourceId, OutputStream outputStream) throws Exception {
+    private void exportGeoJson(String layerId, OutputStream outputStream) throws Exception {
         PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)));
         writer.write("{\"type\":\"FeatureCollection\",\"features\":[");
         writer.flush();
@@ -59,12 +60,24 @@ public class MapExportService {
         List<Map<String, Object>> features;
 
         do {
-            features = fetchPage(layerId, sourceId, pageSize, page * pageSize);
+            features = spatialMapper.findAsGeoJson(layerId, pageSize, page * pageSize);
             for (Map<String, Object> feature : features) {
                 if (!first) {
                     writer.write(",");
                 }
-                writer.write(MAPPER.writeValueAsString(feature));
+                // 构建标准 GeoJSON Feature 对象
+                Map<String, Object> featureObj = new LinkedHashMap<>();
+                featureObj.put("type", "Feature");
+                featureObj.put("id", feature.get("id"));
+                // properties 从字符串解析为 JSON 对象
+                Object propsRaw = feature.get("properties");
+                Object props = propsRaw != null ? MAPPER.readValue(propsRaw.toString(), Object.class) : null;
+                featureObj.put("properties", props);
+                // geometry 从字符串解析为 JSON 对象
+                Object geomRaw = feature.get("geometry");
+                Object geom = geomRaw != null ? MAPPER.readValue(geomRaw.toString(), Object.class) : null;
+                featureObj.put("geometry", geom);
+                writer.write(MAPPER.writeValueAsString(featureObj));
                 first = false;
             }
             writer.flush();
@@ -75,9 +88,11 @@ public class MapExportService {
         writer.flush();
     }
 
-    private void exportCsv(String layerId, String sourceId, OutputStream outputStream) throws Exception {
+    private void exportCsv(String layerId, OutputStream outputStream) throws Exception {
+        // UTF-8 BOM，解决 Excel 打开中文乱码
+        outputStream.write(new byte[]{(byte) 0xEF, (byte) 0xBB, (byte) 0xBF});
         PrintWriter writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(outputStream, StandardCharsets.UTF_8)));
-        writer.println("id,source_id,lng,lat,properties");
+        writer.println("id,properties,geometry");
         writer.flush();
 
         int page = 0;
@@ -85,68 +100,20 @@ public class MapExportService {
         List<Map<String, Object>> features;
 
         do {
-            features = fetchPage(layerId, sourceId, pageSize, page * pageSize);
+            features = spatialMapper.findAsGeoJson(layerId, pageSize, page * pageSize);
             for (Map<String, Object> feature : features) {
-                String id = String.valueOf(feature.get("id"));
-                String sourceIdVal = String.valueOf(feature.get("source_id"));
+                // id 前加 tab，强制 Excel 当文本处理，避免雪花 ID 末尾精度丢失
+                String id = "\t" + feature.get("id");
                 String properties = feature.get("properties") != null
                         ? MAPPER.writeValueAsString(feature.get("properties")).replace("\"", "\"\"")
                         : "";
                 String geomJson = feature.get("geometry") != null ? feature.get("geometry").toString() : "";
-                String[] lngLat = extractLngLat(geomJson);
-                writer.println(String.format("\"%s\",\"%s\",%s,%s,\"{\\\"properties\\\":%s}\"",
-                        id, sourceIdVal, lngLat[0], lngLat[1], properties));
+                String escapedGeom = geomJson.replace("\"", "\"\"");
+                writer.println(String.format("\"%s\",\"%s\",\"%s\"", id, properties, escapedGeom));
             }
             writer.flush();
             page++;
         } while (features.size() == pageSize);
-    }
-
-    private List<Map<String, Object>> fetchPage(String layerId, String sourceId, int limit, int offset) {
-        if (sourceId != null && !sourceId.isBlank()) {
-            return spatialMapper.findAsGeoJsonBySource(layerId, sourceId, limit, offset);
-        }
-        return spatialMapper.findAsGeoJson(layerId, limit, offset);
-    }
-
-    private String[] extractLngLat(String geoJson) {
-        if (geoJson != null && geoJson.contains("\"coordinates\"")) {
-            try {
-                Map<String, Object> geom = MAPPER.readValue(geoJson, Map.class);
-                Object coords = geom.get("coordinates");
-                if (coords instanceof List<?> list) {
-                    double[] firstPair = findFirstCoordinate(list);
-                    if (firstPair != null) {
-                        return new String[]{String.valueOf(firstPair[0]), String.valueOf(firstPair[1])};
-                    }
-                }
-            } catch (Exception e) {
-                log.debug("Extract lng/lat failed", e);
-            }
-        }
-        return new String[]{"0", "0"};
-    }
-
-    /**
-     * 递归查找 GeoJSON coordinates 数组中的第一对 [lng, lat]。
-     * 支持 Point（扁平数组）、LineString / MultiPoint（嵌套一层）、
-     * Polygon / MultiLineString（嵌套两层）等几何类型。
-     */
-    private double[] findFirstCoordinate(List<?> coords) {
-        for (Object item : coords) {
-            if (item instanceof Number) {
-                // 这层是坐标值：取前两个作为 [lng, lat]
-                if (coords.size() >= 2 && coords.get(0) instanceof Number && coords.get(1) instanceof Number) {
-                    return new double[]{((Number) coords.get(0)).doubleValue(),
-                            ((Number) coords.get(1)).doubleValue()};
-                }
-                return null;
-            } else if (item instanceof List<?> nested) {
-                double[] result = findFirstCoordinate(nested);
-                if (result != null) return result;
-            }
-        }
-        return null;
     }
 
     @Getter
